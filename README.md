@@ -27,7 +27,7 @@ Equivalenti a Beeftext 15:
 - **Edizione portatile**: con un file `Portable.bin` accanto all'eseguibile, tutti i dati vanno nella sottocartella `Data`.
 - **Avvio all'accesso**, icona nell'area di notifica, istanza singola (un secondo avvio mostra la finestra già aperta).
 - **Suono** di conferma (integrato, oppure un file WAV a scelta).
-- Interfaccia in **italiano** e **inglese**, tema chiaro, scuro o di sistema.
+- Interfaccia in **inglese** (predefinita), **italiano**, **francese** e **spagnolo**, con cambio di lingua immediato; tema chiaro, scuro o di sistema.
 
 ### Compatibilità con Beeftext
 
@@ -127,7 +127,8 @@ src/
 ├── qtdate.rs          formati data/ora in stile Qt, spostamenti, nomi localizzati
 ├── engine.rs          thread del motore: buffer digitato, corrispondenze, emoji, rendering
 ├── app_state.rs       stato condiviso (RwLock) tra hook, motore e interfaccia
-├── prefs.rs  shortcut.rs  process_list.rs  backup.rs  emoji.rs  sound.rs  i18n.rs  paths.rs  logger.rs  icon.rs
+├── i18n.rs            traduzioni Fluent: tr("id"), tr!("id", nome = valore), plurali CLDR
+├── prefs.rs  shortcut.rs  process_list.rs  backup.rs  emoji.rs  sound.rs  paths.rs  logger.rs  icon.rs
 ├── platform/
 │   ├── mod.rs         trait Keyboard, Clipboard, InputSink e tipi comuni
 │   ├── windows.rs     backend Windows
@@ -135,11 +136,35 @@ src/
 │   ├── linux.rs       backend Linux (X11)
 │   └── unix_common.rs appunti arboard, istanza singola via socket Unix, suoni
 └── ui/                interfaccia egui/eframe: finestra principale, dialoghi, preferenze, picker, tray
+locales/               en.ftl (riferimento), it.ftl, fr.ftl, es.ftl
 ```
 
 Flusso: l'hook di piattaforma traduce i tasti in `InputEvent` (carattere, backspace, interruzione, scorciatoia) e li invia al thread del motore. Il motore aggiorna il buffer, cerca i combo, valuta le variabili (il dialogo `#{input:}` passa per l'interfaccia tramite un canale), cancella la parola chiave e incolla o digita il risultato. L'interfaccia gira nel thread principale e resta attiva anche con la finestra nascosta nella tray: il picker e il dialogo di input sono finestre indipendenti.
 
 Per aggiungere una piattaforma basta un modulo in `platform/` che esponga le stesse funzioni (`start_input_monitor`, `new_keyboard`, `new_clipboard`, `active_app_name`, …).
+
+## Traduzioni
+
+I testi dell'interfaccia stanno in `locales/*.ftl`, nel formato [Fluent](https://projectfluent.org), e vengono inclusi nell'eseguibile. L'inglese (`en.ftl`) è il riferimento: un messaggio che manca in un'altra lingua viene mostrato in inglese. Nelle preferenze, alla voce Aspetto, si sceglie tra le quattro lingue o "Lingua del sistema", che usa la lingua del sistema operativo se è tradotta e l'inglese altrimenti.
+
+Nel codice un messaggio semplice si scrive `tr("menu-quit")`, uno con parametri `tr!("msg-combos-imported", count = n)`. I plurali seguono le regole CLDR di ogni lingua (in francese 0 e 1 sono singolari):
+
+```ftl
+msg-combos-imported =
+    { $count ->
+        [one] { $count } combo a été importé.
+       *[other] { $count } combos ont été importés.
+    }
+```
+
+Per aggiungere una lingua:
+
+1. copia `locales/en.ftl` in `locales/xx.ftl` e traduci i valori, lasciando invariati gli id e le variabili `{ $nome }`;
+2. in `src/i18n.rs` aggiungi la variante a `Lang` (codice, nome nella lingua stessa, `include_str!`);
+3. in `src/prefs.rs` aggiungi la voce a `Language` e alla lista del menu in `ui/prefs_window.rs`;
+4. esegui `cargo test`: i test controllano che il file abbia tutti i messaggi di `en.ftl`, con le stesse variabili, e che ogni id usato nel codice esista.
+
+I nomi dei tasti nelle scorciatoie mostrate nelle preferenze sono tradotti (Maiusc, Maj, Mayús…), ma nei file e nelle variabili `#{shortcut:}` restano in inglese, così i combo funzionano con qualsiasi lingua.
 
 ## Differenze rispetto a Beeftext
 
@@ -150,7 +175,7 @@ Per aggiungere una piattaforma basta un modulo in `platform/` che esponga le ste
 - Il testo incollato non entra nella cronologia degli appunti di Windows.
 - Un combo non può richiamare se stesso con `#{combo:}`.
 - Con lo spazio come attivatore e lo spazio finale mantenuto, `#{cursor}` tiene conto dello spazio aggiunto.
-- Non ci sono il controllo degli aggiornamenti e le traduzioni oltre italiano e inglese.
+- Non c'è il controllo degli aggiornamenti. Le traduzioni sono quattro (inglese, italiano, francese, spagnolo) contro le undici di Beeftext.
 
 ## Test
 
@@ -158,7 +183,7 @@ Per aggiungere una piattaforma basta un modulo in `platform/` che esponga le ste
 cargo test
 ```
 
-41 test unitari coprono il formato dei file, le variabili, i formati di data, i frammenti, il cursore, le corrispondenze e il motore di sostituzione (con tastiera e appunti simulati).
+47 test unitari coprono le traduzioni, il formato dei file, le variabili, i formati di data, i frammenti, il cursore, le corrispondenze e il motore di sostituzione (con tastiera e appunti simulati).
 
 ## Licenza
 

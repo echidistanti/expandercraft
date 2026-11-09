@@ -17,11 +17,14 @@ pub enum Theme {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub enum Language {
-    /// Follow the system language.
+    /// Follow the system language (English if it is not translated).
+    #[serde(alias = "Auto")]
+    System,
     #[default]
-    Auto,
     English,
     Italian,
+    French,
+    Spanish,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -100,7 +103,7 @@ impl Default for Preferences {
             enable_app_toggle_shortcut: false,
             app_toggle_shortcut: Shortcut::default_app_toggle(),
             theme: Theme::System,
-            language: Language::Auto,
+            language: Language::English,
             default_matching_mode: MatchingMode::Strict,
             default_case_sensitivity: CaseSensitivity::CaseSensitive,
             warn_about_short_keyword: true,

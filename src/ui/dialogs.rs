@@ -57,21 +57,21 @@ impl ComboEditor {
 /// The entries of the "Insert variable" menu: (label, text inserted).
 fn variable_entries() -> Vec<(&'static str, &'static str)> {
     vec![
-        (tr("Clipboard content"), "#{clipboard}"),
-        (tr("Cursor position"), "#{cursor}"),
-        (tr("Date"), "#{date}"),
-        (tr("Time"), "#{time}"),
-        (tr("Date and time"), "#{dateTime}"),
-        (tr("Custom date/time"), "#{dateTime:yyyy-MM-dd HH:mm}"),
-        (tr("Shifted date/time"), "#{dateTime:+1d:yyyy-MM-dd}"),
-        (tr("Combo"), "#{combo:}"),
-        (tr("Combo in uppercase"), "#{upper:}"),
-        (tr("Combo in lowercase"), "#{lower:}"),
-        (tr("Combo, trimmed"), "#{trim:}"),
-        (tr("User input"), "#{input:}"),
-        (tr("Environment variable"), "#{envVar:}"),
-        (tr("PowerShell script"), "#{powershell:}"),
-        (tr("Delay (ms)"), "#{delay:500}"),
+        (tr("var-clipboard"), "#{clipboard}"),
+        (tr("var-cursor"), "#{cursor}"),
+        (tr("var-date"), "#{date}"),
+        (tr("var-time"), "#{time}"),
+        (tr("var-date-time"), "#{dateTime}"),
+        (tr("var-custom-date-time"), "#{dateTime:yyyy-MM-dd HH:mm}"),
+        (tr("var-shifted-date-time"), "#{dateTime:+1d:yyyy-MM-dd}"),
+        (tr("label-combo"), "#{combo:}"),
+        (tr("var-combo-upper"), "#{upper:}"),
+        (tr("var-combo-lower"), "#{lower:}"),
+        (tr("var-combo-trim"), "#{trim:}"),
+        (tr("var-input"), "#{input:}"),
+        (tr("var-env"), "#{envVar:}"),
+        (tr("var-powershell"), "#{powershell:}"),
+        (tr("var-delay"), "#{delay:500}"),
     ]
 }
 
@@ -181,7 +181,7 @@ fn buttons_row(ui: &mut egui::Ui, ok_label: &str, ok_enabled: bool) -> (bool, bo
         if ui.add_enabled(ok_enabled, b).clicked() {
             ok = true;
         }
-        if ui.add(egui::Button::new(tr("Cancel")).min_size(egui::vec2(90.0, 0.0))).clicked() {
+        if ui.add(egui::Button::new(tr("app-cancel")).min_size(egui::vec2(90.0, 0.0))).clicked() {
             cancel = true;
         }
     });
@@ -226,7 +226,7 @@ impl ExpanderApp {
             ui.label(&text);
             ui.add_space(10.0);
             ui.allocate_ui_with_layout(egui::vec2(ui.available_width(), 30.0), Layout::right_to_left(Align::Center), |ui| {
-                if ui.add(egui::Button::new("OK").min_size(egui::vec2(90.0, 0.0))).clicked() {
+                if ui.add(egui::Button::new(tr("app-ok")).min_size(egui::vec2(90.0, 0.0))).clicked() {
                     close = true;
                 }
             });
@@ -256,23 +256,23 @@ impl ExpanderApp {
         let snippet_id = Id::unique("combo_snippet_editor");
         let r = modal("combo_editor").show(ctx, |ui| {
             ui.set_width(640.0);
-            ui.heading(if ed.is_new { tr("New combo") } else { tr("Edit combo") });
+            ui.heading(if ed.is_new { tr("label-new-combo") } else { tr("editor-edit-title") });
             ui.add_space(8.0);
             egui::Grid::new("combo_grid").num_columns(2).spacing([12.0, 8.0]).show(ui, |ui| {
-                ui.label(tr("Name"));
-                let r = ui.add(egui::TextEdit::singleline(&mut ed.combo.name).hint_text(tr("Optional")).desired_width(f32::INFINITY));
+                ui.label(tr("label-name"));
+                let r = ui.add(egui::TextEdit::singleline(&mut ed.combo.name).hint_text(tr("app-optional")).desired_width(f32::INFINITY));
                 if !ed.focused {
                     r.request_focus();
                     ed.focused = true;
                 }
                 ui.end_row();
 
-                ui.label(tr("Keyword"));
+                ui.label(tr("label-keyword"));
                 ui.vertical(|ui| {
                     let r = ui.add(
                         egui::TextEdit::singleline(&mut ed.combo.keyword)
                             .font(egui::TextStyle::Monospace)
-                            .hint_text(tr("e.g. btsig"))
+                            .hint_text(tr("editor-keyword-hint"))
                             .desired_width(f32::INFINITY),
                     );
                     if r.changed() {
@@ -280,27 +280,17 @@ impl ExpanderApp {
                     }
                     let kw_len = ed.combo.keyword.chars().count();
                     if kw_len == 0 && prefs.warn_about_empty_keyword {
-                        ui.label(
-                            RichText::new(tr("Without a keyword, the combo can only be inserted with the combo picker."))
-                                .color(style::WARNING)
-                                .small(),
-                        );
+                        ui.label(RichText::new(tr("editor-warn-empty-keyword")).color(style::WARNING).small());
                     } else if kw_len > 0 && kw_len < 3 && prefs.warn_about_short_keyword {
-                        ui.label(RichText::new(tr("Short keywords may be triggered by mistake.")).color(style::WARNING).small());
+                        ui.label(RichText::new(tr("editor-warn-short-keyword")).color(style::WARNING).small());
                     }
                     if let Some(other) = &duplicate {
-                        ui.label(
-                            RichText::new(
-                                tr("This keyword is also used by '{}': one of them will be chosen at random.").replace("{}", other),
-                            )
-                            .color(style::WARNING)
-                            .small(),
-                        );
+                        ui.label(RichText::new(tr!("editor-warn-duplicate-keyword", name = other.as_str())).color(style::WARNING).small());
                     }
                 });
                 ui.end_row();
 
-                ui.label(tr("Group"));
+                ui.label(tr("label-group"));
                 let current = groups.iter().find(|(u, _)| Some(*u) == ed.combo.group).map(|(_, n)| n.clone()).unwrap_or_default();
                 egui::ComboBox::from_id_salt("combo_group").selected_text(current).width(240.0).show_ui(ui, |ui| {
                     for (u, n) in &groups {
@@ -309,7 +299,7 @@ impl ExpanderApp {
                 });
                 ui.end_row();
 
-                ui.label(tr("Matching"));
+                ui.label(tr("editor-matching"));
                 ui.horizontal(|ui| {
                     let ml = matching_labels(&prefs);
                     let current = ml.iter().find(|(m, _)| *m == ed.combo.matching_mode).map(|(_, l)| l.clone()).unwrap_or_default();
@@ -329,23 +319,23 @@ impl ExpanderApp {
                 });
                 ui.end_row();
 
-                ui.label(tr("Description"));
-                ui.add(egui::TextEdit::singleline(&mut ed.combo.description).hint_text(tr("Optional")).desired_width(f32::INFINITY));
+                ui.label(tr("editor-description"));
+                ui.add(egui::TextEdit::singleline(&mut ed.combo.description).hint_text(tr("app-optional")).desired_width(f32::INFINITY));
                 ui.end_row();
             });
 
             ui.add_space(6.0);
             ui.horizontal(|ui| {
-                ui.label(RichText::new(tr("Snippet")).strong());
+                ui.label(RichText::new(tr("label-snippet")).strong());
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                    ui.menu_button(format!("{} ⏷", tr("Insert variable")), |ui| {
+                    ui.menu_button(format!("{} ⏷", tr("editor-insert-variable")), |ui| {
                         for (label, text) in variable_entries() {
                             if ui.button(format!("{label}   {text}")).clicked() {
                                 ed.insert(text);
                                 ui.close();
                             }
                         }
-                        ui.menu_button(tr("Key"), |ui| {
+                        ui.menu_button(tr("var-key"), |ui| {
                             egui::ScrollArea::vertical().max_height(320.0).show(ui, |ui| {
                                 for k in crate::shortcut::Key::VARIABLE_NAMES {
                                     if ui.button(format!("#{{key:{k}}}")).clicked() {
@@ -355,13 +345,13 @@ impl ExpanderApp {
                                 }
                             });
                         });
-                        if ui.button(tr("Shortcut... (record)")).clicked() {
+                        if ui.button(tr("var-shortcut-record")).clicked() {
                             self.start_recording(RecordTarget::SnippetVariable);
                             ui.close();
                         }
                     });
                     if self.recording == Some(RecordTarget::SnippetVariable) {
-                        ui.label(RichText::new(tr("Press the shortcut to insert (Esc to cancel)...")).color(style::accent(ui)));
+                        ui.label(RichText::new(tr("editor-recording-shortcut")).color(style::accent(ui)));
                     }
                 });
             });
@@ -370,17 +360,17 @@ impl ExpanderApp {
                 .font(egui::TextStyle::Monospace)
                 .desired_rows(10)
                 .desired_width(f32::INFINITY)
-                .hint_text(tr("The text that replaces the keyword"))
+                .hint_text(tr("editor-snippet-hint"))
                 .show(ui);
             if let Some(range) = out.cursor_range {
                 ed.cursor = Some(range.primary.index.0);
             }
             ui.add_space(4.0);
-            ui.checkbox(&mut ed.combo.enabled, tr("Enabled"));
+            ui.checkbox(&mut ed.combo.enabled, tr("app-enabled"));
             if ed.combo.snippet.is_empty() {
-                ui.label(muted(ui, tr("The snippet cannot be empty.")).small());
+                ui.label(muted(ui, tr("editor-snippet-empty")).small());
             }
-            let (o, c) = buttons_row(ui, "OK", !ed.combo.snippet.is_empty());
+            let (o, c) = buttons_row(ui, tr("app-ok"), !ed.combo.snippet.is_empty());
             ok = o || (ui.input(|i| i.modifiers.command && i.key_pressed(egui::Key::Enter)) && !ed.combo.snippet.is_empty());
             cancel = c;
         });
@@ -422,23 +412,23 @@ impl ExpanderApp {
         let mut cancel = false;
         let r = modal("group_editor").show(ctx, |ui| {
             ui.set_width(420.0);
-            ui.heading(if ed.is_new { tr("New group") } else { tr("Edit group") });
+            ui.heading(if ed.is_new { tr("group-new-title") } else { tr("group-edit-title") });
             ui.add_space(8.0);
             egui::Grid::new("group_grid").num_columns(2).spacing([12.0, 8.0]).show(ui, |ui| {
-                ui.label(tr("Name"));
+                ui.label(tr("label-name"));
                 let r = ui.add(egui::TextEdit::singleline(&mut ed.group.name).desired_width(f32::INFINITY));
                 if !ed.focused {
                     r.request_focus();
                     ed.focused = true;
                 }
                 ui.end_row();
-                ui.label(tr("Description"));
+                ui.label(tr("editor-description"));
                 ui.add(egui::TextEdit::singleline(&mut ed.group.description).desired_width(f32::INFINITY));
                 ui.end_row();
             });
-            ui.checkbox(&mut ed.group.enabled, tr("Enabled"));
+            ui.checkbox(&mut ed.group.enabled, tr("app-enabled"));
             let valid = !ed.group.name.trim().is_empty();
-            let (o, c) = buttons_row(ui, "OK", valid);
+            let (o, c) = buttons_row(ui, tr("app-ok"), valid);
             ok = o || (valid && ui.input(|i| i.key_pressed(egui::Key::Enter)));
             cancel = c;
         });
@@ -474,10 +464,10 @@ impl ExpanderApp {
         let mut cancel = false;
         let r = modal("confirm").show(ctx, |ui| {
             ui.set_max_width(440.0);
-            ui.heading(tr("Confirmation"));
+            ui.heading(tr("app-confirmation"));
             ui.add_space(6.0);
             ui.label(&c.text);
-            let (o, cl) = buttons_row(ui, tr("Yes"), true);
+            let (o, cl) = buttons_row(ui, tr("app-yes"), true);
             ok = o;
             cancel = cl;
         });
@@ -498,7 +488,7 @@ impl ExpanderApp {
                     let mut lib = self.shared.library.write();
                     lib.combos.retain(|x| x.group != Some(*g));
                     lib.groups.retain(|x| x.uuid != *g);
-                    lib.ensure_correct_grouping(tr("Default Group"));
+                    lib.ensure_correct_grouping(tr("app-default-group"));
                 }
                 self.group_filter = super::GroupFilter::All;
                 self.selection.clear();
@@ -514,7 +504,7 @@ impl ExpanderApp {
             }
             ConfirmAction::RemoveBackups => {
                 let n = crate::backup::remove_all(&self.shared.backup_dir());
-                self.info(tr("{} backup files were removed.").replace("{}", &n.to_string()));
+                self.info(tr!("msg-backups-removed", count = n));
             }
         }
         false
@@ -527,15 +517,15 @@ impl ExpanderApp {
                 if let Ok(text) = std::fs::read_to_string(self.shared.paths.last_use_file()) {
                     lib.apply_last_use_json(&text);
                 }
-                lib.ensure_correct_grouping(tr("Default Group"));
+                lib.ensure_correct_grouping(tr("app-default-group"));
                 let n = lib.combos.len();
                 *self.shared.library.write() = lib;
                 self.group_filter = super::GroupFilter::All;
                 self.selection.clear();
                 self.commit_library();
-                self.info(tr("{} combos were restored.").replace("{}", &n.to_string()));
+                self.info(tr!("msg-combos-restored", count = n));
             }
-            Err(e) => self.error(format!("{}\n{e:#}", tr("The file could not be loaded."))),
+            Err(e) => self.error(format!("{}\n{e:#}", tr("msg-load-failed"))),
         }
     }
 
@@ -546,32 +536,27 @@ impl ExpanderApp {
         let Some(analysis) = d.analysis.as_ref() else { return false };
         let r = modal("import").show(ctx, |ui| {
             ui.set_width(480.0);
-            ui.heading(tr("Import combos"));
+            ui.heading(tr("import-title"));
             ui.add_space(4.0);
             ui.label(muted(ui, d.path.display().to_string()));
             ui.add_space(8.0);
-            ui.label(tr("New combos: {}").replace("{}", &analysis.new_combos.len().to_string()));
+            ui.label(tr!("import-new-combos", count = analysis.new_combos.len()));
             if analysis.conflict_count() > 0 {
                 ui.add_space(6.0);
-                ui.label(
-                    RichText::new(
-                        tr("{} combos have the same keyword as an existing combo.").replace("{}", &analysis.conflict_count().to_string()),
-                    )
-                    .color(style::WARNING),
-                );
-                ui.radio_value(&mut d.policy, ConflictPolicy::Skip, tr("Skip the conflicting combos"));
-                ui.radio_value(&mut d.policy, ConflictPolicy::Overwrite, tr("Overwrite the existing combos"));
+                ui.label(RichText::new(tr!("import-conflicts", count = analysis.conflict_count())).color(style::WARNING));
+                ui.radio_value(&mut d.policy, ConflictPolicy::Skip, tr("import-skip"));
+                ui.radio_value(&mut d.policy, ConflictPolicy::Overwrite, tr("import-overwrite"));
                 if !analysis.conflicting_newer.is_empty() {
                     ui.radio_value(
                         &mut d.policy,
                         ConflictPolicy::OverwriteOlder,
-                        tr("Overwrite only the older existing combos ({})").replace("{}", &analysis.conflicting_newer.len().to_string()),
+                        tr!("import-overwrite-older", count = analysis.conflicting_newer.len()),
                     );
                 }
             }
             ui.add_space(8.0);
             ui.horizontal(|ui| {
-                ui.label(tr("Import into group"));
+                ui.label(tr("import-into-group"));
                 let current = groups.iter().find(|(u, _)| Some(*u) == d.group).map(|(_, n)| n.clone()).unwrap_or_default();
                 egui::ComboBox::from_id_salt("import_group").selected_text(current).width(220.0).show_ui(ui, |ui| {
                     for (u, n) in &groups {
@@ -580,7 +565,7 @@ impl ExpanderApp {
                 });
             });
             let count = analysis.importable_count(d.policy);
-            let (o, c) = buttons_row(ui, &format!("{} ({count})", tr("Import")), count > 0);
+            let (o, c) = buttons_row(ui, &tr!("import-button", count = count), count > 0);
             ok = o;
             cancel = c;
         });
@@ -593,7 +578,7 @@ impl ExpanderApp {
         let analysis = d.analysis.take().unwrap_or_default();
         let n = library::apply_import(&mut self.shared.library.write(), analysis, d.policy, d.group);
         self.commit_library();
-        self.info(tr("{} combos were imported.").replace("{}", &n.to_string()));
+        self.info(tr!("msg-combos-imported", count = n));
         false
     }
 
@@ -603,12 +588,12 @@ impl ExpanderApp {
         let mut remove_all = false;
         let r = modal("restore_backup").show(ctx, |ui| {
             ui.set_width(420.0);
-            ui.heading(tr("Restore an automatic backup"));
+            ui.heading(tr("restore-auto-title"));
             ui.add_space(4.0);
-            ui.label(muted(ui, tr("A backup of the combo list is made every time it is saved.")));
+            ui.label(muted(ui, tr("restore-auto-info")));
             ui.add_space(6.0);
             if d.files.is_empty() {
-                ui.label(tr("No backup available."));
+                ui.label(tr("restore-no-backup"));
             } else {
                 egui::ScrollArea::vertical().max_height(260.0).show(ui, |ui| {
                     for (i, (_, label)) in d.files.iter().enumerate() {
@@ -618,17 +603,16 @@ impl ExpanderApp {
                     }
                 });
                 ui.add_space(4.0);
-                if ui.button(RichText::new(tr("Remove all backups...")).color(style::DANGER)).clicked() {
+                if ui.button(RichText::new(tr("restore-remove-all")).color(style::DANGER)).clicked() {
                     remove_all = true;
                 }
             }
-            let (o, c) = buttons_row(ui, tr("Restore"), d.selected.is_some());
+            let (o, c) = buttons_row(ui, tr("restore-action"), d.selected.is_some());
             ok = o;
             cancel = c;
         });
         if remove_all {
-            self.dialog =
-                Some(Dialog::Confirm(Confirm::new(tr("Remove all the automatic backups?").to_string(), ConfirmAction::RemoveBackups)));
+            self.dialog = Some(Dialog::Confirm(Confirm::new(tr("confirm-remove-backups").to_string(), ConfirmAction::RemoveBackups)));
             return false;
         }
         if cancel || (r.should_close() && !ok) {
@@ -636,10 +620,7 @@ impl ExpanderApp {
         }
         if ok && let Some(i) = d.selected {
             let path = d.files[i].0.clone();
-            self.dialog = Some(Dialog::Confirm(Confirm::new(
-                tr("All the existing combos and groups will be replaced by the content of the backup file. Continue?").to_string(),
-                ConfirmAction::RestoreFrom(path),
-            )));
+            self.dialog = Some(Dialog::Confirm(Confirm::new(tr("confirm-replace-library").to_string(), ConfirmAction::RestoreFrom(path))));
             return false;
         }
         true
@@ -647,16 +628,9 @@ impl ExpanderApp {
 
     fn app_list_ui(&mut self, ctx: &egui::Context, d: &mut AppListEditor) -> bool {
         let (title, help) = match d.kind {
-            AppListKind::Excluded => {
-                (tr("Excluded applications"), tr("ExpanderCraft does not perform any substitution in these applications."))
-            }
-            AppListKind::Sensitive => (
-                tr("Sensitive applications"),
-                tr("These applications do not support pasting with the keyboard: snippets are typed character by character instead."),
-            ),
-            AppListKind::EmojiExcluded => {
-                (tr("Applications excluded from emoji substitution"), tr("Emoji shortcodes are not replaced in these applications."))
-            }
+            AppListKind::Excluded => (tr("applist-excluded-title"), tr("applist-excluded-help")),
+            AppListKind::Sensitive => (tr("applist-sensitive-title"), tr("applist-sensitive-help")),
+            AppListKind::EmojiExcluded => (tr("applist-emoji-title"), tr("applist-emoji-help")),
         };
         let mut ok = false;
         let mut cancel = false;
@@ -665,13 +639,13 @@ impl ExpanderApp {
             ui.heading(title);
             ui.add_space(4.0);
             ui.label(muted(ui, help));
-            ui.label(muted(ui, tr("One process name per line (e.g. notepad.exe). Wildcards * and ? are accepted.")));
+            ui.label(muted(ui, tr("applist-format")));
             if let Some(app) = crate::platform::active_app_name() {
-                ui.label(muted(ui, format!("{} {app}", tr("Example of a process name:"))).small());
+                ui.label(muted(ui, tr!("applist-example", name = app)).small());
             }
             ui.add_space(6.0);
             ui.add(egui::TextEdit::multiline(&mut d.text).font(egui::TextStyle::Monospace).desired_rows(10).desired_width(f32::INFINITY));
-            let (o, c) = buttons_row(ui, "OK", true);
+            let (o, c) = buttons_row(ui, tr("app-ok"), true);
             ok = o;
             cancel = c;
         });
@@ -698,14 +672,14 @@ impl ExpanderApp {
         let summary = Library::load(&path).map(|p| (p.library.combos.len(), p.library.groups.len())).ok();
         let r = modal("migration").show(ctx, |ui| {
             ui.set_max_width(460.0);
-            ui.heading(tr("Beeftext library found"));
+            ui.heading(tr("migration-title"));
             ui.add_space(6.0);
-            ui.label(tr("A Beeftext combo list was found on this computer. ExpanderCraft can import it with all its groups."));
+            ui.label(tr("migration-text"));
             if let Some((c, g)) = summary {
-                ui.label(RichText::new(format!("{c} {} · {g} {}", tr("combos"), tr("groups"))).strong());
+                ui.label(RichText::new(tr!("app-status-counts", combos = c, groups = g)).strong());
             }
             ui.label(muted(ui, path.display().to_string()).small());
-            let (o, cl) = buttons_row(ui, tr("Import"), summary.is_some());
+            let (o, cl) = buttons_row(ui, tr("import-action"), summary.is_some());
             ok = o;
             cancel = cl;
         });
@@ -732,18 +706,16 @@ fn about_ui(ctx: &egui::Context, shared: &AppShared) -> bool {
             ui.image((tex.id(), egui::vec2(72.0, 72.0)));
             ui.add_space(4.0);
             ui.label(RichText::new("ExpanderCraft").size(24.0).strong());
-            ui.label(muted(ui, format!("{} {}", tr("Version"), env!("CARGO_PKG_VERSION"))));
+            ui.label(muted(ui, tr!("about-version", version = env!("CARGO_PKG_VERSION"))));
             ui.add_space(8.0);
-            ui.label(tr("A text expander written in Rust. Type a keyword, get a snippet."));
+            ui.label(tr("about-tagline"));
             ui.add_space(6.0);
-            ui.label(
-                muted(ui, tr("Inspired by Beeftext by Xavier Michelon (MIT License). Combo files are compatible with Beeftext.")).small(),
-            );
-            ui.label(muted(ui, tr("Emoji shortcodes from gemoji (MIT License).")).small());
+            ui.label(muted(ui, tr("about-credits-beeftext")).small());
+            ui.label(muted(ui, tr("about-credits-emoji")).small());
             ui.add_space(6.0);
-            ui.label(muted(ui, format!("{}: {}", tr("Data folder"), shared.paths.data_dir.display())).small());
+            ui.label(muted(ui, tr!("about-data-folder", path = shared.paths.data_dir.display().to_string())).small());
             ui.add_space(10.0);
-            if ui.add(egui::Button::new("OK").min_size(egui::vec2(90.0, 0.0))).clicked() {
+            if ui.add(egui::Button::new(tr("app-ok")).min_size(egui::vec2(90.0, 0.0))).clicked() {
                 close = true;
             }
         });
@@ -752,35 +724,27 @@ fn about_ui(ctx: &egui::Context, shared: &AppShared) -> bool {
 }
 
 fn help_ui(ctx: &egui::Context) -> bool {
+    let help_combo = tr!("help-combo", upper = "#{upper:}", lower = "#{lower:}", trim = "#{trim:}");
     let entries: Vec<(&str, &str)> = vec![
-        ("#{clipboard}", tr("The text content of the clipboard.")),
-        ("#{cursor}", tr("Position of the text cursor after the substitution.")),
-        ("#{date} #{time} #{dateTime}", tr("Current date and/or time, in the format of the system.")),
-        (
-            "#{dateTime:yyyy-MM-dd HH:mm}",
-            tr("Current date/time with a custom format (d dd ddd dddd M MM MMM MMMM yy yyyy h hh H HH m mm s ss zzz AP w ww)."),
-        ),
-        (
-            "#{dateTime:+1d-2h:format}",
-            tr("Shifted date/time: y M w d h m s z units, the sign is mandatory. The format can be empty, the last colon is mandatory."),
-        ),
-        ("#{combo:keyword}", tr("The snippet of another combo (also #{upper:}, #{lower:} and #{trim:}).")),
-        ("#{input:Description}", tr("Asks the user for a value. The same description is only asked once.")),
-        ("#{envVar:NAME}", tr("The value of an environment variable.")),
-        ("#{powershell:path[:timeoutMs]}", tr("The output of a PowerShell script (10 s timeout by default, 0 means no timeout).")),
-        ("#{key:name[:count]}", tr("Presses a key (tab, enter, up, f5...), optionally several times.")),
-        ("#{shortcut:Ctrl+Shift+J}", tr("Presses a keyboard shortcut.")),
-        ("#{delay:ms}", tr("Pauses the substitution.")),
+        ("#{clipboard}", tr("help-clipboard")),
+        ("#{cursor}", tr("help-cursor")),
+        ("#{date} #{time} #{dateTime}", tr("help-date")),
+        ("#{dateTime:yyyy-MM-dd HH:mm}", tr("help-custom-format")),
+        ("#{dateTime:+1d-2h:format}", tr("help-shift")),
+        ("#{combo:keyword}", help_combo.as_str()),
+        ("#{input:Description}", tr("help-input")),
+        ("#{envVar:NAME}", tr("help-env")),
+        ("#{powershell:path[:timeoutMs]}", tr("help-powershell")),
+        ("#{key:name[:count]}", tr("help-key")),
+        ("#{shortcut:Ctrl+Shift+J}", tr("help-shortcut")),
+        ("#{delay:ms}", tr("help-delay")),
     ];
     let mut close = false;
     let r = modal("help").show(ctx, |ui| {
         ui.set_width(640.0);
-        ui.heading(tr("Variables reference"));
+        ui.heading(tr("menu-variables-reference"));
         ui.add_space(4.0);
-        ui.label(muted(
-            ui,
-            tr("Variables are evaluated each time a combo is triggered. Use \\} and \\\\ to write } and \\ inside a variable."),
-        ));
+        ui.label(muted(ui, tr!("help-intro", escaped_brace = "\\}", escaped_backslash = "\\\\", brace = "}", backslash = "\\")));
         ui.add_space(6.0);
         egui::ScrollArea::vertical().max_height(420.0).show(ui, |ui| {
             egui::Grid::new("help_grid").num_columns(2).striped(true).spacing([14.0, 8.0]).show(ui, |ui| {
@@ -793,7 +757,7 @@ fn help_ui(ctx: &egui::Context) -> bool {
         });
         ui.add_space(8.0);
         ui.allocate_ui_with_layout(egui::vec2(ui.available_width(), 30.0), Layout::right_to_left(Align::Center), |ui| {
-            if ui.add(egui::Button::new("OK").min_size(egui::vec2(90.0, 0.0))).clicked() {
+            if ui.add(egui::Button::new(tr("app-ok")).min_size(egui::vec2(90.0, 0.0))).clicked() {
                 close = true;
             }
         });

@@ -145,7 +145,7 @@ impl ExpanderApp {
     pub(super) fn picker_viewport(&mut self, ctx: &egui::Context) {
         let size = egui::vec2(580.0, 420.0);
         let mut builder = ViewportBuilder::default()
-            .with_title(tr("ExpanderCraft - Combo picker"))
+            .with_title(tr("picker-title"))
             .with_inner_size(size)
             .with_decorations(false)
             .with_resizable(false)
@@ -266,7 +266,7 @@ fn picker_ui(ui: &mut egui::Ui, state: &mut PickerState) -> Option<Option<Picker
             ui.label(RichText::new("🔍").size(18.0));
             let r = ui.add(
                 egui::TextEdit::singleline(&mut state.query)
-                    .hint_text(tr("Search a combo..."))
+                    .hint_text(tr("picker-search"))
                     .font(egui::TextStyle::Heading)
                     .frame(egui::Frame::NONE)
                     .desired_width(f32::INFINITY),
@@ -284,7 +284,7 @@ fn picker_ui(ui: &mut egui::Ui, state: &mut PickerState) -> Option<Option<Picker
         let results = state.results();
         if results.is_empty() {
             ui.add_space(20.0);
-            ui.vertical_centered(|ui| ui.label(muted(ui, tr("No matching combo."))));
+            ui.vertical_centered(|ui| ui.label(muted(ui, tr("picker-no-match"))));
         }
         let accent = style::accent(ui);
         egui::ScrollArea::vertical().auto_shrink([false, false]).max_height(ui.available_height() - 22.0).show(ui, |ui| {
@@ -325,7 +325,7 @@ fn picker_ui(ui: &mut egui::Ui, state: &mut PickerState) -> Option<Option<Picker
         if let Some(i) = hovered {
             state.selected = i;
         }
-        ui.label(muted(ui, tr("↑↓ to select · Enter to insert · Esc to close")).small());
+        ui.label(muted(ui, tr("picker-help")).small());
     });
     outcome
 }
@@ -352,12 +352,13 @@ fn input_ui(ui: &mut egui::Ui, prompt: &mut InputPrompt) -> Option<Option<String
         }
         ui.add_space(10.0);
         ui.allocate_ui_with_layout(egui::vec2(ui.available_width(), 30.0), egui::Layout::right_to_left(egui::Align::Center), |ui| {
-            let b =
-                egui::Button::new(RichText::new("OK").color(egui::Color32::WHITE)).fill(style::accent(ui)).min_size(egui::vec2(90.0, 0.0));
+            let b = egui::Button::new(RichText::new(tr("app-ok")).color(egui::Color32::WHITE))
+                .fill(style::accent(ui))
+                .min_size(egui::vec2(90.0, 0.0));
             if ui.add(b).clicked() || enter {
                 result = Some(Some(prompt.value.clone()));
             }
-            if ui.add(egui::Button::new(tr("Cancel")).min_size(egui::vec2(90.0, 0.0))).clicked() || escape {
+            if ui.add(egui::Button::new(tr("app-cancel")).min_size(egui::vec2(90.0, 0.0))).clicked() || escape {
                 result = Some(None);
             }
         });

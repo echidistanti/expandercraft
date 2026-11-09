@@ -1,0 +1,365 @@
+# ExpanderCraft user interface: French.
+# Message ids are shared by all the locales; en.ftl is the reference.
+# Plural forms follow the CLDR rules of the language ([one], [other]...).
+
+## General
+
+app-default-group = Groupe par défaut
+app-error = Erreur
+app-warning = Avertissement
+app-information = Information
+app-confirmation = Confirmation
+app-yes = Oui
+app-ok = OK
+app-cancel = Annuler
+app-browse = Parcourir...
+app-reset = Réinitialiser
+app-clear = Effacer
+app-optional = Facultatif
+app-enabled = Activé
+app-default-with-value = Par défaut ({ $value })
+app-portable-edition = Édition portable
+app-status-counts =
+    { $combos ->
+        [one] { $combos } combo
+       *[other] { $combos } combos
+    } · { $groups ->
+        [one] { $groups } groupe
+       *[other] { $groups } groupes
+    }
+
+## Main window: menus
+
+menu-file = Fichier
+label-combo = Combo
+label-group = Groupe
+menu-tools = Outils
+menu-help = Aide
+menu-import = Importer des combos...
+menu-export-all = Exporter tous les combos...
+menu-export-selected = Exporter les combos sélectionnés...
+menu-preferences = Préférences...
+menu-hide-window = Masquer la fenêtre
+menu-quit = Quitter
+menu-new-group = Nouveau groupe...
+menu-edit-group = Modifier le groupe...
+menu-toggle-group = Activer / désactiver le groupe
+menu-delete-group = Supprimer le groupe...
+menu-backup = Sauvegarder la liste des combos...
+menu-restore = Restaurer la liste des combos...
+menu-restore-auto = Restaurer une sauvegarde automatique...
+menu-cheat-sheet = Créer une antisèche...
+menu-open-data-folder = Ouvrir le dossier des données
+menu-open-log = Ouvrir le fichier journal
+menu-variables-reference = Référence des variables
+menu-about = À propos d'ExpanderCraft
+
+## Main window: combo actions
+
+action-new-combo = Nouveau combo...
+action-edit = Modifier...
+action-duplicate = Dupliquer
+action-copy-snippet = Copier le snippet dans le presse-papiers
+action-enable = Activer
+action-disable = Désactiver
+action-matching-mode = Mode de déclenchement
+action-case-sensitivity = Sensibilité à la casse
+action-move-to-group = Déplacer vers le groupe
+action-delete = Supprimer...
+
+## Main window: groups, table, status bar
+
+groups-title = Groupes
+groups-all = Tous les combos
+group-enable = Activer le groupe
+group-disable = Désactiver le groupe
+group-move-up = Monter
+group-move-down = Descendre
+combos-search = Rechercher des combos...
+label-new-combo = Nouveau combo
+label-name = Nom
+label-keyword = Mot-clé
+label-snippet = Snippet
+column-last-used = Dernière utilisation
+combos-empty-title = Aucun combo pour l'instant
+combos-empty-text = Un combo associe un mot-clé court à un snippet. Tapez le mot-clé dans n'importe quelle application : il est remplacé par le snippet.
+combos-create-first = Créer votre premier combo
+combos-no-match = Aucun combo ne correspond à la recherche.
+status-active = Actif
+status-paused = En pause
+status-toggle-hint = Cliquer pour activer ou désactiver ExpanderCraft
+
+## Matching and case sensitivity
+
+matching-strict = Strict
+matching-loose = Permissif
+case-sensitive = Sensible à la casse
+case-insensitive = Insensible à la casse
+
+## Main window: confirmations and messages
+
+confirm-delete-combos =
+    { $count ->
+        [one] Supprimer le combo sélectionné ?
+       *[other] Supprimer les { $count } combos sélectionnés ?
+    }
+confirm-delete-group = Supprimer le groupe « { $name } » ?
+confirm-delete-group-with-combos =
+    { $count ->
+        [one] Supprimer le groupe « { $name } » et le combo qu'il contient ?
+       *[other] Supprimer le groupe « { $name } » et les { $count } combos qu'il contient ?
+    }
+confirm-replace-library = Tous les combos et groupes existants seront remplacés par le contenu du fichier de sauvegarde. Continuer ?
+msg-last-group = Le dernier groupe ne peut pas être supprimé.
+filter-combo-files = Fichiers de combos
+filter-all-files = Tous les fichiers
+filter-csv-textexpander = CSV (compatible TextExpander)
+file-name-backup = Sauvegarde ExpanderCraft { $date }
+file-name-cheat-sheet = Antisèche ExpanderCraft
+msg-import-failed = Le fichier n'a pas pu être importé.
+msg-exported = Les combos ont été exportés.
+msg-export-failed = Les combos n'ont pas pu être exportés.
+msg-backup-saved = La sauvegarde a été enregistrée.
+msg-cheat-sheet-done = L'antisèche a été créée.
+msg-load-failed = Le fichier n'a pas pu être chargé.
+msg-combos-restored =
+    { $count ->
+        [one] { $count } combo a été restauré.
+       *[other] { $count } combos ont été restaurés.
+    }
+msg-combos-imported =
+    { $count ->
+        [one] { $count } combo a été importé.
+       *[other] { $count } combos ont été importés.
+    }
+msg-backups-removed =
+    { $count ->
+        [one] { $count } fichier de sauvegarde a été supprimé.
+       *[other] { $count } fichiers de sauvegarde ont été supprimés.
+    }
+msg-library-load-failed = La liste des combos n'a pas pu être chargée.
+msg-library-copy-saved = Une copie du fichier a été enregistrée sous : { $path }
+msg-library-save-failed = La liste des combos n'a pas pu être enregistrée.
+msg-invalid-combos-ignored =
+    { $count ->
+        [one] { $count } combo invalide a été ignoré lors du chargement de la liste.
+       *[other] { $count } combos invalides ont été ignorés lors du chargement de la liste.
+    }
+
+## Combo editor
+
+editor-edit-title = Modifier le combo
+editor-keyword-hint = ex. : btsig
+editor-matching = Déclenchement
+editor-description = Description
+editor-snippet-hint = Le texte qui remplace le mot-clé
+editor-snippet-empty = Le snippet ne peut pas être vide.
+editor-warn-empty-keyword = Sans mot-clé, le combo ne peut être inséré qu'avec le sélecteur de combos.
+editor-warn-short-keyword = Les mots-clés courts peuvent se déclencher par erreur.
+editor-warn-duplicate-keyword = Ce mot-clé est aussi utilisé par « { $name } » : l'un d'eux sera choisi au hasard.
+editor-insert-variable = Insérer une variable
+editor-recording-shortcut = Appuyez sur le raccourci à insérer (Échap pour annuler)...
+var-clipboard = Contenu du presse-papiers
+var-cursor = Position du curseur
+var-date = Date
+var-time = Heure
+var-date-time = Date et heure
+var-custom-date-time = Date/heure personnalisée
+var-shifted-date-time = Date/heure décalée
+var-combo-upper = Combo en majuscules
+var-combo-lower = Combo en minuscules
+var-combo-trim = Combo sans espaces aux extrémités
+var-input = Saisie de l'utilisateur
+var-env = Variable d'environnement
+var-powershell = Script PowerShell
+var-delay = Pause (ms)
+var-key = Touche
+var-shortcut-record = Raccourci... (enregistrer)
+
+## Group editor
+
+group-new-title = Nouveau groupe
+group-edit-title = Modifier le groupe
+
+## Import
+
+import-title = Importer des combos
+import-new-combos = Nouveaux combos : { $count }
+import-conflicts =
+    { $count ->
+        [one] { $count } combo a le même mot-clé qu'un combo existant.
+       *[other] { $count } combos ont le même mot-clé qu'un combo existant.
+    }
+import-skip = Ignorer les combos en conflit
+import-overwrite = Remplacer les combos existants
+import-overwrite-older = Remplacer uniquement les combos existants plus anciens ({ $count })
+import-into-group = Importer dans le groupe
+import-button = Importer ({ $count })
+import-action = Importer
+
+## Backups
+
+restore-auto-title = Restaurer une sauvegarde automatique
+restore-auto-info = Une sauvegarde de la liste des combos est créée à chaque enregistrement.
+restore-no-backup = Aucune sauvegarde disponible.
+restore-remove-all = Supprimer toutes les sauvegardes...
+restore-action = Restaurer
+confirm-remove-backups = Supprimer toutes les sauvegardes automatiques ?
+
+## Application lists
+
+applist-excluded-title = Applications exclues
+applist-excluded-help = ExpanderCraft n'effectue aucune substitution dans ces applications.
+applist-sensitive-title = Applications sensibles
+applist-sensitive-help = Ces applications ne permettent pas de coller au clavier : les snippets y sont tapés caractère par caractère.
+applist-emoji-title = Applications exclues de la substitution des emojis
+applist-emoji-help = Les shortcodes d'emojis ne sont pas remplacés dans ces applications.
+applist-format = Un nom de processus par ligne (ex. notepad.exe). Les caractères génériques * et ? sont acceptés.
+applist-example = Exemple de nom de processus : { $name }
+
+## Beeftext migration
+
+migration-title = Bibliothèque Beeftext trouvée
+migration-text = Une liste de combos Beeftext a été trouvée sur cet ordinateur. ExpanderCraft peut l'importer avec tous ses groupes.
+
+## About
+
+about-version = Version { $version }
+about-tagline = Un expanseur de texte écrit en Rust. Tapez un mot-clé, obtenez un snippet.
+about-credits-beeftext = Inspiré de Beeftext de Xavier Michelon (licence MIT). Les fichiers de combos sont compatibles avec Beeftext.
+about-credits-emoji = Shortcodes d'emojis issus de gemoji (licence MIT).
+about-data-folder = Dossier des données : { $path }
+
+## Variables reference
+
+help-intro = Les variables sont évaluées à chaque déclenchement d'un combo. Utilisez { $escaped_brace } et { $escaped_backslash } pour écrire { $brace } et { $backslash } dans une variable.
+help-clipboard = Le texte contenu dans le presse-papiers.
+help-cursor = Position du curseur de texte après la substitution.
+help-date = Date et/ou heure actuelles, au format du système.
+help-custom-format = Date/heure actuelles avec un format personnalisé (d dd ddd dddd M MM MMM MMMM yy yyyy h hh H HH m mm s ss zzz AP w ww).
+help-shift = Date/heure décalée : unités y M w d h m s z, le signe est obligatoire. Le format peut rester vide ; les deux-points finaux sont obligatoires.
+help-combo = Le snippet d'un autre combo (également { $upper }, { $lower } et { $trim }).
+help-input = Demande une valeur à l'utilisateur. Une même description n'est demandée qu'une fois.
+help-env = La valeur d'une variable d'environnement.
+help-powershell = La sortie d'un script PowerShell (délai de 10 s par défaut, 0 = aucun délai).
+help-key = Appuie sur une touche (tab, enter, up, f5...), éventuellement plusieurs fois.
+help-shortcut = Appuie sur un raccourci clavier.
+help-delay = Met la substitution en pause.
+
+## Preferences
+
+prefs-title = Préférences
+prefs-tab-behavior = Comportement
+prefs-tab-appearance = Apparence
+prefs-tab-combos = Combos
+prefs-tab-emojis = Emojis
+prefs-tab-advanced = Avancé
+prefs-section-general = Général
+prefs-enabled = ExpanderCraft est activé
+prefs-autostart = Lancer ExpanderCraft à l'ouverture de session
+prefs-portable-unavailable = Non disponible dans l'édition portable.
+prefs-play-sound = Émettre un son au déclenchement d'un combo
+prefs-custom-sound = Son personnalisé
+prefs-section-substitution = Substitution
+prefs-automatic = Automatique : le combo se déclenche dès que le mot-clé est tapé
+prefs-manual = Manuel : tapez le mot-clé, puis appuyez sur le raccourci de déclenchement
+prefs-trigger-shortcut = Raccourci de déclenchement
+prefs-trigger-on-space = Déclencher les combos par un espace tapé après le mot-clé
+prefs-keep-space = Conserver l'espace après le snippet
+prefs-section-picker = Sélecteur de combos
+prefs-enable-picker = Activer le sélecteur de combos
+prefs-shortcut = Raccourci
+prefs-section-toggle = Raccourci d'activation / désactivation
+prefs-use-toggle = Utiliser un raccourci pour activer ou désactiver ExpanderCraft
+prefs-recording = Appuyez sur un raccourci... (Échap pour annuler)
+prefs-record-hint = Cliquez, puis appuyez sur le nouveau raccourci
+prefs-section-language = Langue
+prefs-system-language = Langue du système ({ $language })
+prefs-section-theme = Thème
+prefs-theme-system = Comme le système
+prefs-theme-light = Clair
+prefs-theme-dark = Sombre
+prefs-section-defaults = Valeurs par défaut des nouveaux combos
+prefs-matching-help = Strict : le texte tapé doit être exactement le mot-clé. Permissif : le combo peut se déclencher au milieu d'un mot.
+prefs-section-warnings = Avertissements
+prefs-warn-short = Avertir pour les mots-clés de moins de 3 caractères
+prefs-warn-empty = Avertir pour les mots-clés vides
+prefs-section-combo-file = Fichier de la liste des combos
+prefs-change-folder = Changer de dossier...
+prefs-default-folder = Utiliser le dossier par défaut
+prefs-sync-folder-hint = Un dossier synchronisé (OneDrive, Dropbox...) permet de partager vos combos entre plusieurs ordinateurs.
+msg-combo-list-moved =
+    La liste des combos est maintenant enregistrée dans :
+    { $path }
+prefs-section-emoji = Shortcodes d'emojis
+prefs-emoji-enable = Remplacer les shortcodes d'emojis
+prefs-left-delimiter = Délimiteur gauche
+prefs-right-delimiter = Délimiteur droit
+prefs-example = Exemple :
+prefs-excluded-apps = Applications exclues...
+prefs-sensitive-apps = Applications sensibles...
+prefs-show-emojis-in-picker = Afficher les emojis dans le sélecteur de combos (à partir de 3 caractères)
+prefs-section-text-insertion = Insertion du texte
+prefs-restore-clipboard = Restaurer le presse-papiers après une substitution
+prefs-shift-insert = Coller avec Maj+Inser au lieu de Ctrl+V
+prefs-keystroke-delay = Délai entre les frappes lors de la saisie (ms)
+prefs-section-backup = Sauvegarde
+prefs-auto-backup = Sauvegarder automatiquement la liste des combos
+prefs-custom-location = Emplacement personnalisé
+prefs-custom-executable = Exécutable personnalisé
+prefs-powershell-hint = Par exemple pwsh.exe (PowerShell 7) au lieu de Windows PowerShell.
+prefs-section-diagnostics = Diagnostic
+prefs-write-log = Écrire un fichier journal
+prefs-reset = Réinitialiser les préférences...
+prefs-confirm-reset = Rétablir toutes les préférences à leurs valeurs par défaut ?
+msg-autostart-failed = Le démarrage automatique n'a pas pu être modifié.
+
+## Combo picker and input dialog
+
+picker-title = ExpanderCraft - Sélecteur de combos
+picker-search = Rechercher un combo...
+picker-no-match = Aucun combo correspondant.
+picker-help = ↑↓ pour choisir · Entrée pour insérer · Échap pour fermer
+
+## System tray
+
+tray-open = Ouvrir ExpanderCraft
+tray-tooltip-paused = ExpanderCraft (en pause)
+
+## Errors
+
+error-open-file = Impossible d'ouvrir le fichier « { $path } ».
+error-write-file = Impossible d'écrire le fichier « { $path } ».
+error-not-json = Le fichier n'est pas un JSON valide.
+error-invalid-list = Le fichier de la liste des combos est invalide.
+error-no-version = Le fichier de la liste des combos n'indique pas son numéro de version.
+error-newer-version = Le fichier de la liste des combos a été créé par une version plus récente de l'application.
+error-invalid-groups = La liste des groupes est invalide.
+error-invalid-group = La liste des groupes contient un groupe invalide.
+error-invalid-combos = La liste des combos est invalide.
+error-nothing-to-import = Le fichier ne contient aucune donnée importable.
+error-registry = Le registre Windows n'a pas pu être mis à jour (erreur { $code }).
+error-no-config-folder = Le dossier de configuration est introuvable.
+platform-x11-required = La surveillance du clavier n'est pas disponible : un affichage X11 est nécessaire.
+platform-wayland = Session Wayland : pour l'instant, ExpanderCraft ne fonctionne que dans les applications X11/XWayland.
+platform-macos-permissions = Accordez à ExpanderCraft les autorisations Accessibilité et Surveillance de l'entrée dans Réglages Système › Confidentialité et sécurité, puis relancez-le.
+platform-hook-failed = Impossible d'intercepter le clavier : les substitutions sont désactivées.
+
+## Key names (shown in shortcuts)
+
+key-shift = Maj
+key-enter = Entrée
+key-space = Espace
+key-backspace = Retour arrière
+key-escape = Échap
+key-insert = Inser
+key-delete = Suppr
+key-home = Origine
+key-end = Fin
+key-page-up = Pg préc
+key-page-down = Pg suiv
+key-left = Gauche
+key-right = Droite
+key-up = Haut
+key-down = Bas
+key-print = Impr. écran

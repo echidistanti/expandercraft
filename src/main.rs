@@ -8,12 +8,14 @@
 //! * `ui`: the egui user interface, the tray icon, the combo picker and the input dialog.
 //! * `library`, `variables`, `fragments`, `qtdate`: the platform-independent core (Beeftext-compatible).
 
+// first, so that the `tr!` macro is visible in the other modules
+#[macro_use]
+mod i18n;
 mod app_state;
 mod backup;
 mod emoji;
 mod engine;
 mod fragments;
-mod i18n;
 mod icon;
 mod library;
 mod logger;

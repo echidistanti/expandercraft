@@ -444,7 +444,7 @@ fn launch_agent_file() -> Option<std::path::PathBuf> {
 }
 
 pub fn set_autostart(enabled: bool) -> anyhow::Result<()> {
-    let path = launch_agent_file().ok_or_else(|| anyhow::anyhow!("no home folder"))?;
+    let path = launch_agent_file().ok_or_else(|| anyhow::anyhow!(crate::i18n::tr("error-no-config-folder")))?;
     if enabled {
         if let Some(dir) = path.parent() {
             std::fs::create_dir_all(dir)?;
@@ -472,13 +472,7 @@ pub fn set_autostart(enabled: bool) -> anyhow::Result<()> {
 pub fn platform_status() -> PlatformStatus {
     let trusted = unsafe { AXIsProcessTrusted() };
     let ok = INPUT_OK.load(Ordering::SeqCst) && trusted;
-    PlatformStatus {
-        input_ok: ok,
-        message: (!ok).then(|| {
-            crate::i18n::tr("Grant ExpanderCraft the Accessibility and Input Monitoring permissions in System Settings › Privacy & Security, then restart it.")
-                .to_string()
-        }),
-    }
+    PlatformStatus { input_ok: ok, message: (!ok).then(|| crate::i18n::tr("platform-macos-permissions").to_string()) }
 }
 
 #[allow(dead_code)]

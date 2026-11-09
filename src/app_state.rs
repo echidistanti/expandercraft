@@ -173,9 +173,7 @@ impl AppShared {
                 Ok(parsed) => {
                     needs_save = parsed.older_format;
                     if parsed.skipped > 0 {
-                        self.startup_errors.lock().push(
-                            tr("{} invalid combo(s) were ignored while loading the combo list.").replace("{}", &parsed.skipped.to_string()),
-                        );
+                        self.startup_errors.lock().push(tr!("msg-invalid-combos-ignored", count = parsed.skipped));
                     }
                     lib = parsed.library;
                 }
@@ -185,10 +183,9 @@ impl AppShared {
                     let broken = path.with_extension(format!("broken-{}.json", chrono::Local::now().format("%Y%m%d%H%M%S")));
                     let _ = std::fs::copy(&path, &broken);
                     self.startup_errors.lock().push(format!(
-                        "{}\n{e:#}\n{} {}",
-                        tr("The combo list could not be loaded."),
-                        tr("A copy of the file was saved as:"),
-                        broken.display()
+                        "{}\n{e:#}\n{}",
+                        tr("msg-library-load-failed"),
+                        tr!("msg-library-copy-saved", path = broken.display().to_string())
                     ));
                 }
             }
@@ -196,7 +193,7 @@ impl AppShared {
         if let Ok(text) = std::fs::read_to_string(self.paths.last_use_file()) {
             lib.apply_last_use_json(&text);
         }
-        needs_save |= lib.ensure_correct_grouping(tr("Default Group"));
+        needs_save |= lib.ensure_correct_grouping(tr("app-default-group"));
         *self.library.write() = lib;
         if needs_save && let Err(e) = self.save_library() {
             log::warn!("Could not save the combo list after loading it: {e:#}");

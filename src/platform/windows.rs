@@ -924,7 +924,7 @@ pub fn set_autostart(enabled: bool) -> anyhow::Result<()> {
         let mut hkey: HKEY = std::ptr::null_mut();
         let r = RegOpenKeyExW(HKEY_CURRENT_USER, key_name.as_ptr(), 0, KEY_SET_VALUE, &mut hkey);
         if r != ERROR_SUCCESS {
-            anyhow::bail!("could not open the registry key (error {r})");
+            anyhow::bail!(tr!("error-registry", code = r));
         }
         let value = wide(RUN_VALUE);
         let r = if enabled {
@@ -937,7 +937,7 @@ pub fn set_autostart(enabled: bool) -> anyhow::Result<()> {
         };
         RegCloseKey(hkey);
         if r != ERROR_SUCCESS {
-            anyhow::bail!("could not update the registry (error {r})");
+            anyhow::bail!(tr!("error-registry", code = r));
         }
     }
     Ok(())
@@ -945,10 +945,7 @@ pub fn set_autostart(enabled: bool) -> anyhow::Result<()> {
 
 pub fn platform_status() -> PlatformStatus {
     let ok = INPUT_OK.get().copied().unwrap_or(false);
-    PlatformStatus {
-        input_ok: ok,
-        message: (!ok).then(|| crate::i18n::tr("The keyboard hook could not be installed: substitutions are disabled.").to_string()),
-    }
+    PlatformStatus { input_ok: ok, message: (!ok).then(|| crate::i18n::tr("platform-hook-failed").to_string()) }
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
