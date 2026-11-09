@@ -945,7 +945,7 @@ pub fn set_autostart(enabled: bool) -> anyhow::Result<()> {
 
 pub fn platform_status() -> PlatformStatus {
     let ok = INPUT_OK.get().copied().unwrap_or(false);
-    PlatformStatus { input_ok: ok, message: (!ok).then(|| crate::i18n::tr("platform-hook-failed").to_string()) }
+    PlatformStatus { input_ok: ok, message: (!ok).then(|| crate::i18n::tr("platform-hook-failed").to_string()), details: None }
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

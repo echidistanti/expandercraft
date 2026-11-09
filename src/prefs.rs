@@ -80,6 +80,8 @@ pub struct Preferences {
     pub use_custom_powershell: bool,
     pub custom_powershell_path: String,
     pub write_debug_log: bool,
+    /// Linux, Wayland: XKB layout used to read and type text (`it`, `fr(oss)`); empty = detected.
+    pub keyboard_layout: String,
 
     // --- Misc
     pub last_import_export_path: String,
@@ -122,6 +124,7 @@ impl Default for Preferences {
             use_custom_powershell: false,
             custom_powershell_path: String::new(),
             write_debug_log: true,
+            keyboard_layout: String::new(),
             last_import_export_path: String::new(),
         }
     }

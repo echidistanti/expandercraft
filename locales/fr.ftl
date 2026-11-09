@@ -303,6 +303,10 @@ prefs-section-text-insertion = Insertion du texte
 prefs-restore-clipboard = Restaurer le presse-papiers après une substitution
 prefs-shift-insert = Coller avec Maj+Inser au lieu de Ctrl+V
 prefs-keystroke-delay = Délai entre les frappes lors de la saisie (ms)
+prefs-section-keyboard-layout = Disposition du clavier
+prefs-keyboard-layout = Disposition XKB
+prefs-keyboard-layout-in-use = Utilisée : { $layout } ({ $source })
+prefs-keyboard-layout-help = Utilisée dans les sessions Wayland pour lire et taper le texte, par exemple it, us ou fr(oss). Laissez vide pour utiliser la disposition du bureau.
 prefs-section-backup = Sauvegarde
 prefs-auto-backup = Sauvegarder automatiquement la liste des combos
 prefs-custom-location = Emplacement personnalisé
@@ -341,7 +345,16 @@ error-nothing-to-import = Le fichier ne contient aucune donnée importable.
 error-registry = Le registre Windows n'a pas pu être mis à jour (erreur { $code }).
 error-no-config-folder = Le dossier de configuration est introuvable.
 platform-x11-required = La surveillance du clavier n'est pas disponible : un affichage X11 est nécessaire.
-platform-wayland = Session Wayland : pour l'instant, ExpanderCraft ne fonctionne que dans les applications X11/XWayland.
+platform-wayland = Wayland : ExpanderCraft ne peut pas lire le clavier et ne fonctionne que dans les applications X11.
+platform-wayland-permission =
+    Dans une session Wayland, ExpanderCraft lit directement le clavier, mais il n'en a pas encore l'autorisation. En attendant, il ne fonctionne que dans les applications X11.
+
+    Pour la lui donner, exécutez une fois cette commande dans un terminal, puis relancez ExpanderCraft :
+
+    { $command }
+
+    La commande doit être relancée après chaque mise à jour du programme. Le README (section « Wayland ») décrit une autre méthode, avec le groupe input.
+platform-wayland-no-keyboard = Dans une session Wayland, ExpanderCraft lit directement le clavier, mais aucun clavier n'a été trouvé. Il ne fonctionne que dans les applications X11.
 platform-macos-permissions = Accordez à ExpanderCraft les autorisations Accessibilité et Surveillance de l'entrée dans Réglages Système › Confidentialité et sécurité, puis relancez-le.
 platform-hook-failed = Impossible d'intercepter le clavier : les substitutions sont désactivées.
 

@@ -300,6 +300,10 @@ prefs-section-text-insertion = Inserimento del testo
 prefs-restore-clipboard = Ripristina gli appunti dopo una sostituzione
 prefs-shift-insert = Incolla con Maiusc+Ins invece di Ctrl+V
 prefs-keystroke-delay = Pausa tra i tasti durante la digitazione (ms)
+prefs-section-keyboard-layout = Layout della tastiera
+prefs-keyboard-layout = Layout XKB
+prefs-keyboard-layout-in-use = In uso: { $layout } ({ $source })
+prefs-keyboard-layout-help = Serve nelle sessioni Wayland per leggere e digitare il testo, per esempio it, us o fr(oss). Lascia vuoto per usare il layout del desktop.
 prefs-section-backup = Backup
 prefs-auto-backup = Salva automaticamente una copia della lista dei combo
 prefs-custom-location = Percorso personalizzato
@@ -338,7 +342,16 @@ error-nothing-to-import = Il file non contiene dati importabili.
 error-registry = Impossibile aggiornare il registro di Windows (errore { $code }).
 error-no-config-folder = Impossibile trovare la cartella di configurazione.
 platform-x11-required = Il monitoraggio della tastiera non è disponibile: serve un display X11.
-platform-wayland = Sessione Wayland: per ora ExpanderCraft funziona solo nelle applicazioni X11/XWayland.
+platform-wayland = Wayland: ExpanderCraft non può leggere la tastiera e funziona solo nelle applicazioni X11.
+platform-wayland-permission =
+    In una sessione Wayland ExpanderCraft legge direttamente la tastiera, ma non ha ancora i permessi per farlo. Finché non li ha, funziona solo nelle applicazioni X11.
+
+    Per darglieli, esegui una volta questo comando in un terminale e riavvia ExpanderCraft:
+
+    { $command }
+
+    Il comando va ripetuto dopo ogni aggiornamento del programma. Il README (sezione “Wayland”) descrive un'alternativa con il gruppo input.
+platform-wayland-no-keyboard = In una sessione Wayland ExpanderCraft legge direttamente la tastiera, ma non ne ha trovata nessuna. Funziona solo nelle applicazioni X11.
 platform-macos-permissions = Concedi a ExpanderCraft i permessi Accessibilità e Monitoraggio input in Impostazioni di Sistema › Privacy e sicurezza, poi riavvialo.
 platform-hook-failed = Impossibile intercettare la tastiera: le sostituzioni sono disattivate.
 

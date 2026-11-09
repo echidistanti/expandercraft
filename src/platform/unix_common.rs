@@ -32,7 +32,12 @@ impl Clipboard for ArboardClipboard {
     }
 
     fn set_text(&mut self, text: &str) -> bool {
-        Self::with(|cb| cb.set_text(text.to_string()).ok()).is_some()
+        // the snippet should not end up in clipboard history managers (Klipper, macOS clipboard managers...)
+        #[cfg(target_os = "macos")]
+        use arboard::SetExtApple as _;
+        #[cfg(target_os = "linux")]
+        use arboard::SetExtLinux as _;
+        Self::with(|cb| cb.set().exclude_from_history().text(text.to_string()).ok()).is_some()
     }
 
     fn backup(&mut self) -> Option<ClipboardBackup> {

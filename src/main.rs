@@ -86,6 +86,8 @@ fn main() {
 
     let _ = shared.engine_tx.send(EngineMsg::Quit);
     let _ = engine.join();
+    #[cfg(target_os = "linux")]
+    platform::shutdown();
     log::info!("ExpanderCraft stopped.");
     log::logger().flush();
     std::process::exit(0);

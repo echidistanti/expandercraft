@@ -86,7 +86,7 @@ impl ExpanderApp {
         let mut messages: Vec<(String, String)> =
             shared.startup_errors.lock().drain(..).map(|e| (tr("app-error").to_string(), e)).collect();
         let platform_status = crate::platform::platform_status();
-        if let Some(m) = &platform_status.message
+        if let Some(m) = platform_status.details.as_ref().or(platform_status.message.as_ref())
             && !platform_status.input_ok
         {
             messages.push((tr("app-warning").to_string(), m.clone()));
@@ -428,6 +428,15 @@ pub fn run(shared: Arc<AppShared>, ui_rx: Receiver<UiMsg>, start_hidden: bool) -
     if start_hidden {
         viewport = viewport.with_position([-20000.0, -20000.0]);
     }
-    let options = eframe::NativeOptions { viewport, centered: !start_hidden, ..Default::default() };
+    #[allow(unused_mut)]
+    let mut options = eframe::NativeOptions { viewport, centered: !start_hidden, ..Default::default() };
+    // Wayland does not let a program hide its windows (tray) or give them the focus: use XWayland when available
+    #[cfg(target_os = "linux")]
+    if std::env::var_os("DISPLAY").is_some() {
+        options.event_loop_builder = Some(Box::new(|builder| {
+            use winit::platform::x11::EventLoopBuilderExtX11;
+            builder.with_x11();
+        }));
+    }
     eframe::run_native("ExpanderCraft", options, Box::new(move |cc| Ok(Box::new(ExpanderApp::new(cc, shared, ui_rx, start_hidden)))))
 }

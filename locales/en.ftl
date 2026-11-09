@@ -304,6 +304,10 @@ prefs-section-text-insertion = Text insertion
 prefs-restore-clipboard = Restore the clipboard after a substitution
 prefs-shift-insert = Paste with Shift+Insert instead of Ctrl+V
 prefs-keystroke-delay = Delay between keystrokes when typing (ms)
+prefs-section-keyboard-layout = Keyboard layout
+prefs-keyboard-layout = XKB layout
+prefs-keyboard-layout-in-use = In use: { $layout } ({ $source })
+prefs-keyboard-layout-help = Used in Wayland sessions to read and type text, for instance it, us or fr(oss). Leave empty to use the layout of the desktop.
 prefs-section-backup = Backup
 prefs-auto-backup = Back up the combo list automatically
 prefs-custom-location = Custom location
@@ -342,7 +346,16 @@ error-nothing-to-import = The file does not contain importable data.
 error-registry = The Windows registry could not be updated (error { $code }).
 error-no-config-folder = The configuration folder could not be found.
 platform-x11-required = Keyboard monitoring is not available: an X11 display is required.
-platform-wayland = Wayland session: ExpanderCraft only works in X11/XWayland applications for now.
+platform-wayland = Wayland: ExpanderCraft cannot read the keyboard, it only works in X11 applications.
+platform-wayland-permission =
+    In a Wayland session ExpanderCraft reads the keyboard directly, and it does not have access to it yet. Until then it only works in X11 applications.
+
+    To give it access, run this command once in a terminal, then restart ExpanderCraft:
+
+    { $command }
+
+    The command must be run again after each update of the program. The README (section “Wayland”) describes an alternative with the input group.
+platform-wayland-no-keyboard = In a Wayland session ExpanderCraft reads the keyboard directly, but no keyboard was found. It only works in X11 applications.
 platform-macos-permissions = Grant ExpanderCraft the Accessibility and Input Monitoring permissions in System Settings › Privacy & Security, then restart it.
 platform-hook-failed = The keyboard hook could not be installed: substitutions are disabled.
 

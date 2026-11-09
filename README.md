@@ -97,22 +97,47 @@ sudo dnf install gcc gtk3-devel libxdo-devel libappindicator-gtk3-devel libXtst-
 cargo build --release
 ```
 
+### Wayland
+
+Wayland non permette a un programma di vedere i tasti premuti nelle altre finestre. In una sessione Wayland ExpanderCraft legge quindi direttamente tastiere e mouse da `/dev/input` (evdev, come Espanso) e scrive con una tastiera virtuale creata con uinput. Il layout della tastiera viene letto dalle impostazioni del desktop (KDE Plasma, GNOME, Hyprland, `localectl`) e si può forzare in Preferenze › Avanzate › Layout della tastiera (per esempio `it` o `fr(oss)`). L'applicazione attiva, usata per le esclusioni, viene chiesta a KWin con un piccolo script, a Sway e a Hyprland tramite i loro socket. Le finestre di ExpanderCraft girano su XWayland, perché Wayland non permette di nasconderle nella tray né di dar loro il focus.
+
+Per leggere `/dev/input` serve un permesso. Ci sono due modi:
+
+1. **Capability sull'eseguibile** (consigliato). Basta un comando, da ripetere dopo ogni aggiornamento dell'eseguibile:
+
+   ```bash
+   sudo setcap cap_dac_override+p ~/.local/bin/expandercraft
+   ```
+
+   ExpanderCraft attiva il permesso solo nel momento in cui apre una tastiera o la tastiera virtuale, e lo spegne subito dopo. All'avvio, se il permesso manca, una finestra mostra il comando esatto con il percorso dell'eseguibile.
+
+2. **Gruppo `input`**. Su Bazzite si fa con `ujust add-user-to-input-group` (oppure da Bazzite Portal), poi serve una regola per la tastiera virtuale e un nuovo accesso:
+
+   ```bash
+   echo 'KERNEL=="uinput", GROUP="input", MODE="0660", OPTIONS+="static_node=uinput"' | sudo tee /etc/udev/rules.d/60-expandercraft-uinput.rules
+   sudo udevadm control --reload && sudo udevadm trigger
+   ```
+
+   In questo modo tutti i programmi dell'utente possono leggere la tastiera, non solo ExpanderCraft.
+
+Senza permesso ExpanderCraft funziona come prima, solo nelle applicazioni X11.
+
 ## Stato delle piattaforme
 
 | | Windows | macOS | Linux |
 |---|---|---|---|
-| Intercettazione tastiera e mouse | hook `WH_KEYBOARD_LL`/`WH_MOUSE_LL` | `CGEventTap` | `rdev` (XRecord) |
-| Testo da tasto | `ToUnicodeEx` con il layout della finestra attiva, tasti morti preservati | `CGEventKeyboardGetUnicodeString` | `rdev` |
-| Sintesi dei tasti | `SendInput` (eventi marcati e ignorati dall'hook) | `CGEventPost` (eventi marcati) | `enigo` (XTest) |
+| Intercettazione tastiera e mouse | hook `WH_KEYBOARD_LL`/`WH_MOUSE_LL` | `CGEventTap` | X11: `rdev` (XRecord); Wayland: evdev (`/dev/input`) |
+| Testo da tasto | `ToUnicodeEx` con il layout della finestra attiva, tasti morti preservati | `CGEventKeyboardGetUnicodeString` | X11: `rdev`; Wayland: libxkbcommon con il layout del desktop, tasti morti compresi |
+| Sintesi dei tasti | `SendInput` (eventi marcati e ignorati dall'hook) | `CGEventPost` (eventi marcati) | X11: `enigo` (XTest); Wayland: tastiera virtuale uinput |
 | Scorciatoie globali intercettate | sì | sì | rilevate, non intercettate |
-| Appunti con backup | tutti i formati in memoria; esclusi da cronologia Win+V e cloud | testo e immagini (`arboard`) | testo e immagini (`arboard`) |
-| Applicazione attiva | nome dell'eseguibile | nome dell'app (`NSWorkspace`) | `_NET_ACTIVE_WINDOW` → `/proc/<pid>/comm` |
+| Appunti con backup | tutti i formati in memoria; esclusi da cronologia Win+V e cloud | testo e immagini (`arboard`), esclusi dalla cronologia | testo e immagini (`arboard`, anche Wayland data-control), esclusi da Klipper |
+| Applicazione attiva | nome dell'eseguibile | nome dell'app (`NSWorkspace`) | X11: `_NET_ACTIVE_WINDOW`; Wayland: KWin, Sway, Hyprland (GNOME: solo finestre X11) |
 | Avvio all'accesso | `HKCU\…\Run` | LaunchAgent | `~/.config/autostart` |
-| Verifiche fatte | compilazione, clippy, test end-to-end sotto Wine (Notepad) | compilazione e clippy per `aarch64-apple-darwin` | test end-to-end sotto X11 (xterm) |
+| Verifiche fatte | compilazione, clippy, test end-to-end sotto Wine (Notepad) | compilazione e clippy per `aarch64-apple-darwin` | X11: test end-to-end (xterm); Wayland: eventi simulati, sway headless, KWin simulato su D-Bus |
 
 **Limiti noti**
 
-- *Linux/Wayland*: sotto Wayland (per esempio KDE su Bazzite) ExpanderCraft vede e scrive solo nelle applicazioni X11/XWayland. Il passo successivo è un backend `evdev`/`uinput` (richiede l'accesso a `/dev/input`) o basato sui portali XDG *InputCapture*/*RemoteDesktop*.
+- *Linux/Wayland*: serve il permesso di leggere `/dev/input` (vedi sotto). Le scorciatoie arrivano anche all'applicazione attiva; si usa solo il primo layout della lista; su GNOME le esclusioni per applicazione valgono solo per le applicazioni X11. Il backend evdev/uinput va ancora collaudato su una sessione reale.
 - *macOS*: il backend compila; manca ancora il collaudo su una macchina reale e la creazione di un bundle `.app` firmato.
 - *Windows*: come ogni espansore basato su `SendInput`, non scrive nelle finestre eseguite come amministratore se ExpanderCraft non è a sua volta elevato (UIPI).
 
@@ -183,7 +208,7 @@ I nomi dei tasti nelle scorciatoie mostrate nelle preferenze sono tradotti (Maiu
 cargo test
 ```
 
-47 test unitari coprono le traduzioni, il formato dei file, le variabili, i formati di data, i frammenti, il cursore, le corrispondenze e il motore di sostituzione (con tastiera e appunti simulati).
+62 test unitari coprono le traduzioni, il formato dei file, i layout di tastiera e il backend Wayland (eventi evdev simulati), le variabili, i formati di data, i frammenti, il cursore, le corrispondenze e il motore di sostituzione (con tastiera e appunti simulati).
 
 ## Licenza
 

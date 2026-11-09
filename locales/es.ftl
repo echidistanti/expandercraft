@@ -303,6 +303,10 @@ prefs-section-text-insertion = Inserción del texto
 prefs-restore-clipboard = Restaurar el portapapeles después de una sustitución
 prefs-shift-insert = Pegar con Mayús+Insert en lugar de Ctrl+V
 prefs-keystroke-delay = Retardo entre pulsaciones al escribir (ms)
+prefs-section-keyboard-layout = Distribución del teclado
+prefs-keyboard-layout = Distribución XKB
+prefs-keyboard-layout-in-use = En uso: { $layout } ({ $source })
+prefs-keyboard-layout-help = Se usa en las sesiones Wayland para leer y escribir el texto, por ejemplo it, us o fr(oss). Déjalo vacío para usar la distribución del escritorio.
 prefs-section-backup = Copia de seguridad
 prefs-auto-backup = Hacer copias de seguridad automáticas de la lista de combos
 prefs-custom-location = Ubicación personalizada
@@ -341,7 +345,16 @@ error-nothing-to-import = El archivo no contiene datos importables.
 error-registry = No se ha podido actualizar el registro de Windows (error { $code }).
 error-no-config-folder = No se ha encontrado la carpeta de configuración.
 platform-x11-required = La supervisión del teclado no está disponible: se necesita una pantalla X11.
-platform-wayland = Sesión Wayland: por ahora ExpanderCraft solo funciona en aplicaciones X11/XWayland.
+platform-wayland = Wayland: ExpanderCraft no puede leer el teclado y solo funciona en las aplicaciones X11.
+platform-wayland-permission =
+    En una sesión Wayland, ExpanderCraft lee directamente el teclado, pero todavía no tiene permiso para hacerlo. Mientras tanto, solo funciona en las aplicaciones X11.
+
+    Para dárselo, ejecuta una vez este comando en un terminal y reinicia ExpanderCraft:
+
+    { $command }
+
+    Hay que repetir el comando después de cada actualización del programa. El README (sección «Wayland») describe una alternativa con el grupo input.
+platform-wayland-no-keyboard = En una sesión Wayland, ExpanderCraft lee directamente el teclado, pero no ha encontrado ninguno. Solo funciona en las aplicaciones X11.
 platform-macos-permissions = Concede a ExpanderCraft los permisos de Accesibilidad y Monitorización de entrada en Ajustes del Sistema › Privacidad y seguridad, y vuelve a abrirlo.
 platform-hook-failed = No se ha podido interceptar el teclado: las sustituciones están desactivadas.
 

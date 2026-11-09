@@ -5,10 +5,10 @@
 //!
 //! | Feature                    | Windows                 | macOS                          | Linux                        |
 //! |----------------------------|-------------------------|--------------------------------|------------------------------|
-//! | Keyboard/mouse monitoring  | `WH_KEYBOARD_LL` hooks  | `CGEventTap`                   | `rdev` (X11 / XWayland)      |
-//! | Keystroke synthesis        | `SendInput`             | `CGEventPost`                  | `enigo` (XTest)              |
+//! | Keyboard/mouse monitoring  | `WH_KEYBOARD_LL` hooks  | `CGEventTap`                   | X11: `rdev`; Wayland: evdev  |
+//! | Keystroke synthesis        | `SendInput`             | `CGEventPost`                  | X11: XTest; Wayland: uinput  |
 //! | Clipboard backup           | all formats (Win32)     | text (`arboard`)               | text (`arboard`)             |
-//! | Active application         | process image name      | `NSWorkspace` frontmost app    | `_NET_ACTIVE_WINDOW` + /proc |
+//! | Active application         | process image name      | `NSWorkspace` frontmost app    | X11 / KWin / Sway / Hyprland |
 //! | Auto-start                 | `HKCU\...\Run`          | LaunchAgent                    | XDG autostart                |
 
 use std::sync::Arc;
@@ -39,6 +39,11 @@ pub trait InputSink: Send + Sync {
     fn is_excluded_app(&self, app_name: &str) -> bool;
     /// Is the space character a trigger (rather than a combo breaker)?
     fn space_is_trigger(&self) -> bool;
+    /// The keyboard layout chosen in the preferences (Linux, Wayland), empty for automatic detection.
+    #[cfg_attr(not(target_os = "linux"), allow(dead_code))]
+    fn keyboard_layout(&self) -> String {
+        String::new()
+    }
 }
 
 /// Keystroke synthesis.
@@ -74,8 +79,10 @@ pub struct WindowToken(pub u64);
 pub struct PlatformStatus {
     /// Is the global input monitoring working?
     pub input_ok: bool,
-    /// A message for the user (missing permission, limited support...).
+    /// A short message for the user (missing permission, limited support...), shown in the status bar.
     pub message: Option<String>,
+    /// A longer explanation, shown at startup when the input monitoring does not work.
+    pub details: Option<String>,
 }
 
 #[cfg(windows)]

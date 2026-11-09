@@ -123,6 +123,10 @@ impl ExpanderApp {
         if p.language != before.language {
             crate::i18n::set_language(p.language);
         }
+        #[cfg(target_os = "linux")]
+        if p.keyboard_layout != before.keyboard_layout {
+            crate::platform::keyboard_layout_changed(&p.keyboard_layout);
+        }
         if p.write_debug_log != before.write_debug_log {
             crate::logger::set_file_logging(p.write_debug_log);
         }
@@ -358,6 +362,19 @@ fn advanced_tab(ui: &mut egui::Ui, p: &mut Preferences, extras: &mut Vec<Extra>)
             extras.push(Extra::AppList(AppListKind::Sensitive));
         }
     });
+
+    #[cfg(target_os = "linux")]
+    {
+        section(ui, tr("prefs-section-keyboard-layout"));
+        ui.horizontal(|ui| {
+            ui.label(tr("prefs-keyboard-layout"));
+            ui.add(egui::TextEdit::singleline(&mut p.keyboard_layout).desired_width(120.0).font(egui::TextStyle::Monospace));
+            if let Some((layout, source)) = crate::platform::keyboard_layout_in_use() {
+                ui.label(muted(ui, tr!("prefs-keyboard-layout-in-use", layout = layout, source = source)));
+            }
+        });
+        ui.label(muted(ui, tr("prefs-keyboard-layout-help")).small());
+    }
 
     section(ui, tr("prefs-section-backup"));
     ui.checkbox(&mut p.auto_backup, tr("prefs-auto-backup"));

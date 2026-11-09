@@ -472,7 +472,7 @@ pub fn set_autostart(enabled: bool) -> anyhow::Result<()> {
 pub fn platform_status() -> PlatformStatus {
     let trusted = unsafe { AXIsProcessTrusted() };
     let ok = INPUT_OK.load(Ordering::SeqCst) && trusted;
-    PlatformStatus { input_ok: ok, message: (!ok).then(|| crate::i18n::tr("platform-macos-permissions").to_string()) }
+    PlatformStatus { input_ok: ok, message: (!ok).then(|| crate::i18n::tr("platform-macos-permissions").to_string()), details: None }
 }
 
 #[allow(dead_code)]

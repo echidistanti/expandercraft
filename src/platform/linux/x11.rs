@@ -1,11 +1,8 @@
-//! Linux backend (X11 sessions, and X11/XWayland applications in Wayland sessions).
+//! X11 part of the Linux backend: X11 sessions, and X11 (XWayland) windows in Wayland sessions.
 //!
 //! * Input monitoring: `rdev` (XRecord). Shortcuts are reported but cannot be swallowed.
 //! * Keystroke synthesis: `enigo` (XTest).
-//! * Active application: `_NET_ACTIVE_WINDOW` + `_NET_WM_PID` + `/proc/<pid>/comm`.
-//!
-//! Native Wayland applications are not visible to X11 clients: a future backend based on evdev/uinput
-//! (or the RemoteDesktop/InputCapture portals) is needed for them. See the README.
+//! * Active window: `_NET_ACTIVE_WINDOW` + `_NET_WM_PID` + `/proc/<pid>/comm`.
 
 use std::sync::OnceLock;
 use std::time::{Duration, Instant};
@@ -16,11 +13,8 @@ use x11rb::connection::Connection;
 use x11rb::protocol::xproto::{AtomEnum, ClientMessageEvent, ConnectionExt, EventMask, Window};
 use x11rb::rust_connection::RustConnection;
 
-pub use super::unix_common::acquire_single_instance;
-use super::unix_common::{self, ArboardClipboard};
-use super::{Clipboard, InputEvent, Keyboard, PlatformStatus, SharedSink, WindowToken};
+use crate::platform::{InputEvent, Keyboard, SharedSink, WindowToken};
 use crate::shortcut::{Key, Shortcut};
-use crate::variables::DateKind;
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Input monitoring
@@ -39,7 +33,7 @@ struct Mods {
 
 static INPUT_OK: OnceLock<Mutex<bool>> = OnceLock::new();
 
-fn input_ok() -> &'static Mutex<bool> {
+pub fn input_ok() -> &'static Mutex<bool> {
     INPUT_OK.get_or_init(|| Mutex::new(false))
 }
 
@@ -81,7 +75,7 @@ fn handle_event(sink: &SharedSink, mods: &mut Mods, app_cache: &mut Option<(Inst
             let app = match app_cache {
                 Some((t, name)) if t.elapsed() < Duration::from_millis(400) => name.clone(),
                 _ => {
-                    let name = active_app_name();
+                    let name = super::active_app_name();
                     *app_cache = Some((Instant::now(), name.clone()));
                     name
                 }
@@ -258,14 +252,14 @@ fn rdev_to_key(k: rdev::Key) -> Option<Key> {
 // Keystroke synthesis
 // ---------------------------------------------------------------------------------------------------------------------
 
-pub struct LinuxKeyboard {
+pub struct X11Keyboard {
     enigo: Option<Enigo>,
 }
 
 // Enigo keeps an X11 connection; the keyboard object is only ever used from the engine thread.
-unsafe impl Send for LinuxKeyboard {}
+unsafe impl Send for X11Keyboard {}
 
-impl LinuxKeyboard {
+impl X11Keyboard {
     fn enigo(&mut self) -> Option<&mut Enigo> {
         if self.enigo.is_none() {
             match Enigo::new(&Settings::default()) {
@@ -348,7 +342,7 @@ fn to_enigo(key: Key) -> enigo::Key {
     }
 }
 
-impl Keyboard for LinuxKeyboard {
+impl Keyboard for X11Keyboard {
     fn erase(&mut self, count: usize) {
         for _ in 0..count {
             self.click(enigo::Key::Backspace);
@@ -424,12 +418,10 @@ impl Keyboard for LinuxKeyboard {
     }
 }
 
-pub fn new_keyboard() -> Box<dyn Keyboard> {
-    Box::new(LinuxKeyboard { enigo: None })
-}
-
-pub fn new_clipboard() -> Box<dyn Clipboard> {
-    Box::new(ArboardClipboard)
+impl X11Keyboard {
+    pub fn new() -> Self {
+        Self { enigo: None }
+    }
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -474,6 +466,11 @@ pub fn active_app_name() -> Option<String> {
     std::fs::read_to_string(format!("/proc/{pid}/comm")).ok().map(|s| s.trim().to_string())
 }
 
+/// The process owning a window returned by `foreground_window`.
+pub fn token_pid(token: WindowToken) -> Option<u32> {
+    window_pid(token.0 as Window)
+}
+
 pub fn foreground_window() -> Option<WindowToken> {
     active_window().map(|w| WindowToken(w as u64))
 }
@@ -488,90 +485,4 @@ pub fn activate_window(token: WindowToken) {
 
 pub fn is_own_process_foreground() -> bool {
     active_window().and_then(window_pid).map(|p| p == std::process::id()).unwrap_or(false)
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-// Misc
-// ---------------------------------------------------------------------------------------------------------------------
-
-pub fn post_substitution_grace() -> Duration {
-    // XRecord delivers our own synthetic events asynchronously
-    Duration::from_millis(250)
-}
-
-pub fn powershell_exe() -> &'static str {
-    "pwsh"
-}
-
-pub fn configure_background_command(_cmd: &mut std::process::Command) {}
-
-pub fn system_date(dt: &chrono::DateTime<chrono::Local>, kind: DateKind, locale: chrono::Locale) -> String {
-    match kind {
-        DateKind::Date => crate::qtdate::default_date(dt, locale),
-        DateKind::Time => crate::qtdate::default_time(dt, locale),
-        DateKind::DateTime => crate::qtdate::default_date_time(dt, locale),
-    }
-}
-
-pub fn play_wav_bytes(bytes: &'static [u8]) {
-    if let Some(p) = unix_common::notification_wav_file(bytes) {
-        play_wav_file(&p.display().to_string());
-    }
-}
-
-pub fn play_wav_file(path: &str) {
-    unix_common::play_with_commands(path, &["paplay", "pw-play", "aplay"]);
-}
-
-fn autostart_file() -> Option<std::path::PathBuf> {
-    directories::BaseDirs::new().map(|b| b.config_dir().join("autostart").join("expandercraft.desktop"))
-}
-
-pub fn set_autostart(enabled: bool) -> anyhow::Result<()> {
-    let path = autostart_file().ok_or_else(|| anyhow::anyhow!(crate::i18n::tr("error-no-config-folder")))?;
-    if enabled {
-        if let Some(dir) = path.parent() {
-            std::fs::create_dir_all(dir)?;
-        }
-        let content = format!(
-            "[Desktop Entry]\nType=Application\nName=ExpanderCraft\nComment=Text expander\nExec=\"{}\" --background\nTerminal=false\nX-GNOME-Autostart-enabled=true\n",
-            unix_common::current_exe_string()
-        );
-        std::fs::write(&path, content)?;
-    } else if path.exists() {
-        std::fs::remove_file(&path)?;
-    }
-    Ok(())
-}
-
-pub fn is_wayland_session() -> bool {
-    std::env::var("XDG_SESSION_TYPE").map(|s| s.eq_ignore_ascii_case("wayland")).unwrap_or(false)
-        || std::env::var_os("WAYLAND_DISPLAY").map(|v| !v.is_empty()).unwrap_or(false)
-}
-
-pub fn platform_status() -> PlatformStatus {
-    let ok = *input_ok().lock();
-    let message = if !ok {
-        Some(crate::i18n::tr("platform-x11-required").to_string())
-    } else if is_wayland_session() {
-        Some(crate::i18n::tr("platform-wayland").to_string())
-    } else {
-        None
-    };
-    PlatformStatus { input_ok: ok, message }
-}
-
-/// The tray icon needs a GTK main loop on Linux: run it in a dedicated thread.
-pub fn spawn_tray_thread(build: impl FnOnce() -> Option<Box<dyn std::any::Any>> + Send + 'static) {
-    std::thread::Builder::new()
-        .name("expandercraft-tray".into())
-        .spawn(move || {
-            if gtk::init().is_err() {
-                log::warn!("GTK could not be initialized: no tray icon.");
-                return;
-            }
-            let _tray = build();
-            gtk::main();
-        })
-        .ok();
 }

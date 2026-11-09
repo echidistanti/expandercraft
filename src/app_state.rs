@@ -300,6 +300,10 @@ impl InputSink for AppShared {
     fn space_is_trigger(&self) -> bool {
         self.space_trigger.load(Ordering::Relaxed)
     }
+
+    fn keyboard_layout(&self) -> String {
+        self.prefs.read().keyboard_layout.clone()
+    }
 }
 
 /// Small helper used by the engine and the UI to wait a little.
