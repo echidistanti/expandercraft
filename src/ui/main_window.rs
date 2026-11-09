@@ -121,72 +121,72 @@ impl ExpanderApp {
 
     fn menu_bar(&mut self, ui: &mut egui::Ui, actions: &mut Vec<Action>) {
         let has_sel = !self.selection.is_empty();
-        ui.menu_button(tr("File"), |ui| {
-            if ui.button(tr("Import combos...")).clicked() {
+        ui.menu_button(tr("menu-file"), |ui| {
+            if ui.button(tr("menu-import")).clicked() {
                 actions.push(Action::Import);
             }
-            if ui.button(tr("Export all combos...")).clicked() {
+            if ui.button(tr("menu-export-all")).clicked() {
                 actions.push(Action::Export(false));
             }
-            if ui.add_enabled(has_sel, egui::Button::new(tr("Export selected combos..."))).clicked() {
+            if ui.add_enabled(has_sel, egui::Button::new(tr("menu-export-selected"))).clicked() {
                 actions.push(Action::Export(true));
             }
             ui.separator();
-            if ui.button(tr("Preferences...")).clicked() {
+            if ui.button(tr("menu-preferences")).clicked() {
                 actions.push(Action::Preferences);
             }
             ui.separator();
-            if ui.button(tr("Hide window")).clicked() {
+            if ui.button(tr("menu-hide-window")).clicked() {
                 actions.push(Action::Hide);
             }
-            if ui.button(tr("Quit")).clicked() {
+            if ui.button(tr("menu-quit")).clicked() {
                 actions.push(Action::Quit);
             }
         });
-        ui.menu_button(tr("Combo"), |ui| self.combo_menu(ui, actions, true));
-        ui.menu_button(tr("Group"), |ui| {
-            if ui.button(tr("New group...")).clicked() {
+        ui.menu_button(tr("label-combo"), |ui| self.combo_menu(ui, actions, true));
+        ui.menu_button(tr("label-group"), |ui| {
+            if ui.button(tr("menu-new-group")).clicked() {
                 actions.push(Action::NewGroup);
             }
             if let super::GroupFilter::Group(g) = self.group_filter {
-                if ui.button(tr("Edit group...")).clicked() {
+                if ui.button(tr("menu-edit-group")).clicked() {
                     actions.push(Action::EditGroup(g));
                 }
-                if ui.button(tr("Enable / disable group")).clicked() {
+                if ui.button(tr("menu-toggle-group")).clicked() {
                     actions.push(Action::ToggleGroup(g));
                 }
-                if ui.button(tr("Delete group...")).clicked() {
+                if ui.button(tr("menu-delete-group")).clicked() {
                     actions.push(Action::DeleteGroup(g));
                 }
             }
         });
-        ui.menu_button(tr("Tools"), |ui| {
-            if ui.button(tr("Back up combo list...")).clicked() {
+        ui.menu_button(tr("menu-tools"), |ui| {
+            if ui.button(tr("menu-backup")).clicked() {
                 actions.push(Action::Backup);
             }
-            if ui.button(tr("Restore combo list...")).clicked() {
+            if ui.button(tr("menu-restore")).clicked() {
                 actions.push(Action::Restore);
             }
-            if ui.button(tr("Restore an automatic backup...")).clicked() {
+            if ui.button(tr("menu-restore-auto")).clicked() {
                 actions.push(Action::RestoreAuto);
             }
             ui.separator();
-            if ui.button(tr("Generate cheat sheet...")).clicked() {
+            if ui.button(tr("menu-cheat-sheet")).clicked() {
                 actions.push(Action::CheatSheet);
             }
             ui.separator();
-            if ui.button(tr("Open data folder")).clicked() {
+            if ui.button(tr("menu-open-data-folder")).clicked() {
                 actions.push(Action::OpenDataFolder);
             }
-            if ui.button(tr("Open log file")).clicked() {
+            if ui.button(tr("menu-open-log")).clicked() {
                 actions.push(Action::OpenLog);
             }
         });
-        ui.menu_button(tr("Help"), |ui| {
-            if ui.button(tr("Variables reference")).clicked() {
+        ui.menu_button(tr("menu-help"), |ui| {
+            if ui.button(tr("menu-variables-reference")).clicked() {
                 actions.push(Action::Help);
             }
-            if ui.button(tr("About ExpanderCraft")).clicked() {
+            if ui.button(tr("menu-about")).clicked() {
                 actions.push(Action::About);
             }
         });
@@ -195,33 +195,33 @@ impl ExpanderApp {
     /// Combo actions, shared by the menu bar and the context menu of the table.
     fn combo_menu(&mut self, ui: &mut egui::Ui, actions: &mut Vec<Action>, include_new: bool) {
         let n = self.selection.len();
-        if include_new && ui.button(tr("New combo...")).clicked() {
+        if include_new && ui.button(tr("action-new-combo")).clicked() {
             actions.push(Action::NewCombo);
             ui.close();
         }
-        if ui.add_enabled(n == 1, egui::Button::new(tr("Edit..."))).clicked() {
+        if ui.add_enabled(n == 1, egui::Button::new(tr("action-edit"))).clicked() {
             actions.push(Action::EditCombo(self.selection[0]));
             ui.close();
         }
-        if ui.add_enabled(n > 0, egui::Button::new(tr("Duplicate"))).clicked() {
+        if ui.add_enabled(n > 0, egui::Button::new(tr("action-duplicate"))).clicked() {
             actions.push(Action::Duplicate);
             ui.close();
         }
-        if ui.add_enabled(n == 1, egui::Button::new(tr("Copy snippet to clipboard"))).clicked() {
+        if ui.add_enabled(n == 1, egui::Button::new(tr("action-copy-snippet"))).clicked() {
             actions.push(Action::CopySnippet(self.selection[0]));
             ui.close();
         }
         ui.separator();
-        if ui.add_enabled(n > 0, egui::Button::new(tr("Enable"))).clicked() {
+        if ui.add_enabled(n > 0, egui::Button::new(tr("action-enable"))).clicked() {
             actions.push(Action::SetEnabled(self.selection.clone(), true));
             ui.close();
         }
-        if ui.add_enabled(n > 0, egui::Button::new(tr("Disable"))).clicked() {
+        if ui.add_enabled(n > 0, egui::Button::new(tr("action-disable"))).clicked() {
             actions.push(Action::SetEnabled(self.selection.clone(), false));
             ui.close();
         }
         ui.add_enabled_ui(n > 0, |ui| {
-            ui.menu_button(tr("Matching mode"), |ui| {
+            ui.menu_button(tr("action-matching-mode"), |ui| {
                 for (m, label) in matching_labels(&self.shared.prefs.read()) {
                     if ui.button(label).clicked() {
                         actions.push(Action::SetMatching(m));
@@ -229,7 +229,7 @@ impl ExpanderApp {
                     }
                 }
             });
-            ui.menu_button(tr("Case sensitivity"), |ui| {
+            ui.menu_button(tr("action-case-sensitivity"), |ui| {
                 for (c, label) in case_labels(&self.shared.prefs.read()) {
                     if ui.button(label).clicked() {
                         actions.push(Action::SetCase(c));
@@ -237,7 +237,7 @@ impl ExpanderApp {
                     }
                 }
             });
-            ui.menu_button(tr("Move to group"), |ui| {
+            ui.menu_button(tr("action-move-to-group"), |ui| {
                 let groups: Vec<(Uuid, String)> = self.shared.library.read().groups.iter().map(|g| (g.uuid, g.name.clone())).collect();
                 for (g, name) in groups {
                     if ui.button(name).clicked() {
@@ -248,7 +248,7 @@ impl ExpanderApp {
             });
         });
         ui.separator();
-        if ui.add_enabled(n > 0, egui::Button::new(RichText::new(tr("Delete...")).color(style::DANGER))).clicked() {
+        if ui.add_enabled(n > 0, egui::Button::new(RichText::new(tr("action-delete")).color(style::DANGER))).clicked() {
             actions.push(Action::DeleteSelected);
             ui.close();
         }
@@ -257,9 +257,9 @@ impl ExpanderApp {
     fn groups_panel(&mut self, ui: &mut egui::Ui, actions: &mut Vec<Action>) {
         ui.add_space(6.0);
         ui.horizontal(|ui| {
-            ui.label(RichText::new(tr("Groups")).strong());
+            ui.label(RichText::new(tr("groups-title")).strong());
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                if ui.small_button("+").on_hover_text(tr("New group...")).clicked() {
+                if ui.small_button("+").on_hover_text(tr("menu-new-group")).clicked() {
                     actions.push(Action::NewGroup);
                 }
             });
@@ -274,7 +274,7 @@ impl ExpanderApp {
         egui::ScrollArea::vertical().auto_shrink([false, false]).show(ui, |ui| {
             ui.with_layout(Layout::top_down_justified(Align::Min), |ui| {
                 let all_selected = self.group_filter == GroupFilter::All;
-                if ui.selectable_label(all_selected, format!("{}  ({total})", tr("All combos"))).clicked() {
+                if ui.selectable_label(all_selected, format!("{}  ({total})", tr("groups-all"))).clicked() {
                     self.group_filter = GroupFilter::All;
                 }
                 ui.add_space(2.0);
@@ -294,24 +294,24 @@ impl ExpanderApp {
                         actions.push(Action::EditGroup(uuid));
                     }
                     r.context_menu(|ui| {
-                        if ui.button(tr("Edit group...")).clicked() {
+                        if ui.button(tr("menu-edit-group")).clicked() {
                             actions.push(Action::EditGroup(uuid));
                             ui.close();
                         }
-                        if ui.button(if enabled { tr("Disable group") } else { tr("Enable group") }).clicked() {
+                        if ui.button(if enabled { tr("group-disable") } else { tr("group-enable") }).clicked() {
                             actions.push(Action::ToggleGroup(uuid));
                             ui.close();
                         }
-                        if ui.add_enabled(i > 0, egui::Button::new(tr("Move up"))).clicked() {
+                        if ui.add_enabled(i > 0, egui::Button::new(tr("group-move-up"))).clicked() {
                             actions.push(Action::MoveGroup(uuid, -1));
                             ui.close();
                         }
-                        if ui.add_enabled(i + 1 < len, egui::Button::new(tr("Move down"))).clicked() {
+                        if ui.add_enabled(i + 1 < len, egui::Button::new(tr("group-move-down"))).clicked() {
                             actions.push(Action::MoveGroup(uuid, 1));
                             ui.close();
                         }
                         ui.separator();
-                        if ui.button(RichText::new(tr("Delete group...")).color(style::DANGER)).clicked() {
+                        if ui.button(RichText::new(tr("menu-delete-group")).color(style::DANGER)).clicked() {
                             actions.push(Action::DeleteGroup(uuid));
                             ui.close();
                         }
@@ -368,18 +368,19 @@ impl ExpanderApp {
     fn combos_panel(&mut self, ui: &mut egui::Ui, actions: &mut Vec<Action>) {
         ui.add_space(4.0);
         ui.horizontal(|ui| {
-            let search = egui::TextEdit::singleline(&mut self.search).hint_text(tr("Search combos...")).desired_width(280.0);
+            let search = egui::TextEdit::singleline(&mut self.search).hint_text(tr("combos-search")).desired_width(280.0);
             let r = ui.add(search);
             if self.focus_search {
                 r.request_focus();
                 self.focus_search = false;
             }
-            if !self.search.is_empty() && ui.small_button("✖").on_hover_text(tr("Clear")).clicked() {
+            if !self.search.is_empty() && ui.small_button("✖").on_hover_text(tr("app-clear")).clicked() {
                 self.search.clear();
             }
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                 let accent = style::accent(ui);
-                let new_btn = egui::Button::new(RichText::new(format!("+ {}", tr("New combo"))).color(egui::Color32::WHITE)).fill(accent);
+                let new_btn =
+                    egui::Button::new(RichText::new(format!("+ {}", tr("label-new-combo"))).color(egui::Color32::WHITE)).fill(accent);
                 if ui.add(new_btn).on_hover_text("Ctrl+N").clicked() {
                     actions.push(Action::NewCombo);
                 }
@@ -424,13 +425,13 @@ impl ExpanderApp {
         table
             .header(26.0, |mut header| {
                 header.col(|ui| header_label(ui, "✔", SortColumn::Enabled, &mut header_click));
-                header.col(|ui| header_label(ui, tr("Name"), SortColumn::Name, &mut header_click));
-                header.col(|ui| header_label(ui, tr("Keyword"), SortColumn::Keyword, &mut header_click));
-                header.col(|ui| header_label(ui, tr("Snippet"), SortColumn::Snippet, &mut header_click));
+                header.col(|ui| header_label(ui, tr("label-name"), SortColumn::Name, &mut header_click));
+                header.col(|ui| header_label(ui, tr("label-keyword"), SortColumn::Keyword, &mut header_click));
+                header.col(|ui| header_label(ui, tr("label-snippet"), SortColumn::Snippet, &mut header_click));
                 if show_group {
-                    header.col(|ui| header_label(ui, tr("Group"), SortColumn::Group, &mut header_click));
+                    header.col(|ui| header_label(ui, tr("label-group"), SortColumn::Group, &mut header_click));
                 }
-                header.col(|ui| header_label(ui, tr("Last used"), SortColumn::LastUsed, &mut header_click));
+                header.col(|ui| header_label(ui, tr("column-last-used"), SortColumn::LastUsed, &mut header_click));
             })
             .body(|body| {
                 body.rows(26.0, rows.len(), |mut row| {
@@ -490,18 +491,18 @@ impl ExpanderApp {
         ui.vertical_centered(|ui| {
             ui.add_space(ui.available_height() * 0.25);
             if self.search.is_empty() {
-                ui.label(RichText::new(tr("No combo yet")).heading());
+                ui.label(RichText::new(tr("combos-empty-title")).heading());
                 ui.add_space(6.0);
-                ui.label(muted(ui, tr("A combo associates a short keyword to a snippet. Type the keyword in any application and it is replaced by the snippet.")));
+                ui.label(muted(ui, tr("combos-empty-text")));
                 ui.add_space(12.0);
-                if ui.button(format!("+ {}", tr("Create your first combo"))).clicked() {
+                if ui.button(format!("+ {}", tr("combos-create-first"))).clicked() {
                     actions.push(Action::NewCombo);
                 }
-                if ui.button(tr("Import combos...")).clicked() {
+                if ui.button(tr("menu-import")).clicked() {
                     actions.push(Action::Import);
                 }
             } else {
-                ui.label(muted(ui, tr("No combo matches the search.")));
+                ui.label(muted(ui, tr("combos-no-match")));
             }
         });
     }
@@ -510,13 +511,12 @@ impl ExpanderApp {
         ui.horizontal(|ui| {
             let enabled = self.shared.is_enabled();
             let (dot, text) = if enabled {
-                (RichText::new("●").color(style::accent(ui)), tr("Active"))
+                (RichText::new("●").color(style::accent(ui)), tr("status-active"))
             } else {
-                (RichText::new("●").color(style::WARNING), tr("Paused"))
+                (RichText::new("●").color(style::WARNING), tr("status-paused"))
             };
             ui.label(dot);
-            if ui.add(egui::Label::new(text).sense(Sense::click())).on_hover_text(tr("Click to enable or disable ExpanderCraft")).clicked()
-            {
+            if ui.add(egui::Label::new(text).sense(Sense::click())).on_hover_text(tr("status-toggle-hint")).clicked() {
                 actions.push(Action::ToggleEnabled);
             }
             ui.separator();
@@ -524,14 +524,14 @@ impl ExpanderApp {
                 let lib = self.shared.library.read();
                 (lib.combos.len(), lib.groups.len())
             };
-            ui.label(muted(ui, format!("{n} {} · {groups} {}", tr("combos"), tr("groups"))));
+            ui.label(muted(ui, tr!("app-status-counts", combos = n, groups = groups)));
             if let Some(m) = &self.platform_status.message {
                 ui.separator();
                 ui.label(RichText::new(format!("⚠ {m}")).color(style::WARNING).small());
             }
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                 if self.shared.paths.portable {
-                    ui.label(muted(ui, tr("Portable edition")));
+                    ui.label(muted(ui, tr("app-portable-edition")));
                 }
             });
         });
@@ -573,11 +573,7 @@ impl ExpanderApp {
             }
             Action::DeleteSelected => {
                 let n = self.selection.len();
-                let text = if n == 1 {
-                    tr("Delete the selected combo?").to_string()
-                } else {
-                    tr("Delete the {} selected combos?").replace("{}", &n.to_string())
-                };
+                let text = tr!("confirm-delete-combos", count = n);
                 self.dialog = Some(Dialog::Confirm(Confirm::new(text, ConfirmAction::DeleteCombos(self.selection.clone()))));
             }
             Action::SetEnabled(ids, enabled) => {
@@ -628,14 +624,12 @@ impl ExpanderApp {
                     )
                 };
                 if groups <= 1 {
-                    self.info(tr("The last group cannot be deleted."));
+                    self.info(tr("msg-last-group"));
                 } else {
                     let text = if count == 0 {
-                        tr("Delete the group '{name}'?").replace("{name}", &name)
+                        tr!("confirm-delete-group", name = name)
                     } else {
-                        tr("Delete the group '{name}' and the {n} combos it contains?")
-                            .replace("{name}", &name)
-                            .replace("{n}", &count.to_string())
+                        tr!("confirm-delete-group-with-combos", name = name, count = count)
                     };
                     self.dialog = Some(Dialog::Confirm(Confirm::new(text, ConfirmAction::DeleteGroup(uuid))));
                 }
@@ -723,7 +717,11 @@ impl ExpanderApp {
     }
 
     fn import_file(&mut self) {
-        let Some(path) = self.file_dialog().add_filter(tr("Combo files"), &["json", "csv"]).add_filter(tr("All files"), &["*"]).pick_file()
+        let Some(path) = self
+            .file_dialog()
+            .add_filter(tr("filter-combo-files"), &["json", "csv"])
+            .add_filter(tr("filter-all-files"), &["*"])
+            .pick_file()
         else {
             return;
         };
@@ -731,7 +729,7 @@ impl ExpanderApp {
         let target = self.default_group_for_new_combo();
         match ImportDialog::open(&self.shared, &path, target) {
             Ok(d) => self.dialog = Some(Dialog::Import(d)),
-            Err(e) => self.error(format!("{}\n{e:#}", tr("The file could not be imported."))),
+            Err(e) => self.error(format!("{}\n{e:#}", tr("msg-import-failed"))),
         }
     }
 
@@ -740,7 +738,7 @@ impl ExpanderApp {
             .file_dialog()
             .set_file_name("combos.json")
             .add_filter("JSON", &["json"])
-            .add_filter(tr("CSV (TextExpander compatible)"), &["csv"])
+            .add_filter(tr("filter-csv-textexpander"), &["csv"])
             .save_file()
         else {
             return;
@@ -752,18 +750,18 @@ impl ExpanderApp {
         let result =
             if is_csv { Library::export_csv(combos.iter(), &path) } else { Library { combos, groups: Vec::new() }.save(&path, false) };
         match result {
-            Ok(()) => self.info(tr("The combos were exported.")),
-            Err(e) => self.error(format!("{}\n{e:#}", tr("The combos could not be exported."))),
+            Ok(()) => self.info(tr("msg-exported")),
+            Err(e) => self.error(format!("{}\n{e:#}", tr("msg-export-failed"))),
         }
     }
 
     fn manual_backup(&mut self) {
-        let name = format!("ExpanderCraft backup {}.json", chrono::Local::now().format("%Y-%m-%d"));
+        let name = format!("{}.json", tr!("file-name-backup", date = chrono::Local::now().format("%Y-%m-%d").to_string()));
         let Some(path) = self.file_dialog().set_file_name(name).add_filter("JSON", &["json"]).save_file() else { return };
         self.remember_dir(&path);
         let r = self.shared.library.read().save(&path, true);
         match r {
-            Ok(()) => self.info(tr("The backup was saved.")),
+            Ok(()) => self.info(tr("msg-backup-saved")),
             Err(e) => self.error(format!("{e:#}")),
         }
     }
@@ -771,20 +769,23 @@ impl ExpanderApp {
     fn restore_from_file(&mut self) {
         let Some(path) = self.file_dialog().add_filter("JSON", &["json"]).pick_file() else { return };
         self.remember_dir(&path);
-        self.dialog = Some(Dialog::Confirm(Confirm::new(
-            tr("All the existing combos and groups will be replaced by the content of the backup file. Continue?").to_string(),
-            ConfirmAction::RestoreFrom(path),
-        )));
+        self.dialog = Some(Dialog::Confirm(Confirm::new(tr("confirm-replace-library").to_string(), ConfirmAction::RestoreFrom(path))));
     }
 
     fn cheat_sheet(&mut self) {
-        let Some(path) = self.file_dialog().set_file_name("ExpanderCraft cheat sheet.csv").add_filter("CSV", &["csv"]).save_file() else {
+        let Some(path) =
+            self.file_dialog().set_file_name(format!("{}.csv", tr("file-name-cheat-sheet"))).add_filter("CSV", &["csv"]).save_file()
+        else {
             return;
         };
         self.remember_dir(&path);
-        let r = self.shared.library.read().export_cheat_sheet(&path, [tr("Group"), tr("Name"), tr("Keyword"), tr("Snippet")]);
+        let r = self
+            .shared
+            .library
+            .read()
+            .export_cheat_sheet(&path, [tr("label-group"), tr("label-name"), tr("label-keyword"), tr("label-snippet")]);
         match r {
-            Ok(()) => self.info(tr("The cheat sheet was generated.")),
+            Ok(()) => self.info(tr("msg-cheat-sheet-done")),
             Err(e) => self.error(format!("{e:#}")),
         }
     }
@@ -792,24 +793,24 @@ impl ExpanderApp {
 
 pub fn matching_labels(prefs: &crate::prefs::Preferences) -> Vec<(MatchingMode, String)> {
     let default = match MatchingMode::Default.resolve(prefs) {
-        MatchingMode::Loose => tr("Loose"),
-        _ => tr("Strict"),
+        MatchingMode::Loose => tr("matching-loose"),
+        _ => tr("matching-strict"),
     };
     vec![
-        (MatchingMode::Default, format!("{} ({default})", tr("Default"))),
-        (MatchingMode::Strict, tr("Strict").to_string()),
-        (MatchingMode::Loose, tr("Loose").to_string()),
+        (MatchingMode::Default, tr!("app-default-with-value", value = default)),
+        (MatchingMode::Strict, tr("matching-strict").to_string()),
+        (MatchingMode::Loose, tr("matching-loose").to_string()),
     ]
 }
 
 pub fn case_labels(prefs: &crate::prefs::Preferences) -> Vec<(CaseSensitivity, String)> {
     let default = match CaseSensitivity::Default.resolve(prefs) {
-        CaseSensitivity::CaseInsensitive => tr("Case insensitive"),
-        _ => tr("Case sensitive"),
+        CaseSensitivity::CaseInsensitive => tr("case-insensitive"),
+        _ => tr("case-sensitive"),
     };
     vec![
-        (CaseSensitivity::Default, format!("{} ({default})", tr("Default"))),
-        (CaseSensitivity::CaseSensitive, tr("Case sensitive").to_string()),
-        (CaseSensitivity::CaseInsensitive, tr("Case insensitive").to_string()),
+        (CaseSensitivity::Default, tr!("app-default-with-value", value = default)),
+        (CaseSensitivity::CaseSensitive, tr("case-sensitive").to_string()),
+        (CaseSensitivity::CaseInsensitive, tr("case-insensitive").to_string()),
     ]
 }

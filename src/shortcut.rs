@@ -181,6 +181,30 @@ impl Key {
         }
     }
 
+    /// The name of the key in the language of the user interface (the English name is used in variables and files).
+    pub fn localized_name(self) -> String {
+        let id = match self {
+            Key::Shift => "key-shift",
+            Key::Enter => "key-enter",
+            Key::Space => "key-space",
+            Key::Backspace => "key-backspace",
+            Key::Escape => "key-escape",
+            Key::Insert => "key-insert",
+            Key::Delete => "key-delete",
+            Key::Home => "key-home",
+            Key::End => "key-end",
+            Key::PageUp => "key-page-up",
+            Key::PageDown => "key-page-down",
+            Key::Left => "key-left",
+            Key::Right => "key-right",
+            Key::Up => "key-up",
+            Key::Down => "key-down",
+            Key::PrintScreen => "key-print",
+            _ => return self.display_name(),
+        };
+        crate::i18n::tr(id).to_string()
+    }
+
     pub fn from_display_name(s: &str) -> Option<Key> {
         let l = s.trim().to_lowercase();
         let k = match l.as_str() {
@@ -333,6 +357,27 @@ impl fmt::Display for Shortcut {
             write!(f, "{}+", meta_name())?;
         }
         f.write_str(&self.key.display_name())
+    }
+}
+
+impl Shortcut {
+    /// The shortcut as shown to the user, with key names in the language of the user interface.
+    pub fn localized(&self) -> String {
+        let mut parts: Vec<String> = Vec::new();
+        if self.ctrl {
+            parts.push(Key::Control.localized_name());
+        }
+        if self.alt {
+            parts.push(Key::Alt.localized_name());
+        }
+        if self.shift {
+            parts.push(Key::Shift.localized_name());
+        }
+        if self.meta {
+            parts.push(Key::Meta.localized_name());
+        }
+        parts.push(self.key.localized_name());
+        parts.join("+")
     }
 }
 

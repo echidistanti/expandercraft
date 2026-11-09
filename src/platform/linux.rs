@@ -528,7 +528,7 @@ fn autostart_file() -> Option<std::path::PathBuf> {
 }
 
 pub fn set_autostart(enabled: bool) -> anyhow::Result<()> {
-    let path = autostart_file().ok_or_else(|| anyhow::anyhow!("no configuration folder"))?;
+    let path = autostart_file().ok_or_else(|| anyhow::anyhow!(crate::i18n::tr("error-no-config-folder")))?;
     if enabled {
         if let Some(dir) = path.parent() {
             std::fs::create_dir_all(dir)?;
@@ -552,9 +552,9 @@ pub fn is_wayland_session() -> bool {
 pub fn platform_status() -> PlatformStatus {
     let ok = *input_ok().lock();
     let message = if !ok {
-        Some(crate::i18n::tr("Keyboard monitoring is not available: an X11 display is required.").to_string())
+        Some(crate::i18n::tr("platform-x11-required").to_string())
     } else if is_wayland_session() {
-        Some(crate::i18n::tr("Wayland session: ExpanderCraft only works in X11/XWayland applications for now.").to_string())
+        Some(crate::i18n::tr("platform-wayland").to_string())
     } else {
         None
     };

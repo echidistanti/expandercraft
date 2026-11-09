@@ -47,6 +47,8 @@ pub struct ExpanderApp {
     start_hidden: bool,
     positioned: bool,
     applied_theme: Option<crate::prefs::Theme>,
+    /// Language generation of the texts computed once (platform status), see `i18n::generation`.
+    applied_language: u64,
 
     // main window
     pub group_filter: GroupFilter,
@@ -81,12 +83,13 @@ impl ExpanderApp {
         #[cfg(target_os = "linux")]
         tray::spawn_linux_tray(shared.clone());
 
-        let mut messages: Vec<(String, String)> = shared.startup_errors.lock().drain(..).map(|e| (tr("Error").to_string(), e)).collect();
+        let mut messages: Vec<(String, String)> =
+            shared.startup_errors.lock().drain(..).map(|e| (tr("app-error").to_string(), e)).collect();
         let platform_status = crate::platform::platform_status();
         if let Some(m) = &platform_status.message
             && !platform_status.input_ok
         {
-            messages.push((tr("Warning").to_string(), m.clone()));
+            messages.push((tr("app-warning").to_string(), m.clone()));
         }
 
         let mut app = Self {
@@ -100,6 +103,7 @@ impl ExpanderApp {
             start_hidden,
             positioned: !start_hidden,
             applied_theme: None,
+            applied_language: crate::i18n::generation(),
             group_filter: GroupFilter::All,
             selection: Vec::new(),
             anchor: None,
@@ -158,17 +162,17 @@ impl ExpanderApp {
     }
 
     pub fn error(&mut self, text: impl Into<String>) {
-        self.messages.push((tr("Error").to_string(), text.into()));
+        self.messages.push((tr("app-error").to_string(), text.into()));
     }
 
     pub fn info(&mut self, text: impl Into<String>) {
-        self.messages.push((tr("Information").to_string(), text.into()));
+        self.messages.push((tr("app-information").to_string(), text.into()));
     }
 
     /// Save the library, reporting errors to the user.
     pub fn commit_library(&mut self) {
         if let Err(e) = self.shared.save_library() {
-            self.error(format!("{}\n{e:#}", tr("The combo list could not be saved.")));
+            self.error(format!("{}\n{e:#}", tr("msg-library-save-failed")));
         }
     }
 
@@ -294,6 +298,10 @@ impl eframe::App for ExpanderApp {
         if self.applied_theme != Some(theme) {
             style::apply_theme(ctx, theme);
             self.applied_theme = Some(theme);
+        }
+        if self.applied_language != crate::i18n::generation() {
+            self.applied_language = crate::i18n::generation();
+            self.platform_status = crate::platform::platform_status();
         }
 
         let popups_open = {

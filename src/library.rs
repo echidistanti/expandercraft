@@ -13,6 +13,7 @@ use serde_json::{Map, Value, json};
 use unicode_segmentation::UnicodeSegmentation;
 use uuid::Uuid;
 
+use crate::i18n::tr;
 use crate::prefs::Preferences;
 
 /// The version of the combo list file format written by ExpanderCraft (same as Beeftext 12+).
@@ -150,7 +151,7 @@ impl Group {
     }
 
     fn from_json(obj: &Map<String, Value>) -> Result<Self> {
-        let uuid = obj.get("uuid").and_then(Value::as_str).and_then(parse_uuid).ok_or_else(|| anyhow!("group without a valid uuid"))?;
+        let uuid = obj.get("uuid").and_then(Value::as_str).and_then(parse_uuid).ok_or_else(|| anyhow!(tr("error-invalid-group")))?;
         let n = now();
         Ok(Self {
             uuid,
@@ -484,27 +485,24 @@ impl Library {
 
     pub fn from_json_str(text: &str) -> Result<ParsedLibrary> {
         let text = text.trim_start_matches('\u{feff}');
-        let doc: Value = serde_json::from_str(text).context("the file is not valid JSON")?;
-        let root = doc.as_object().ok_or_else(|| anyhow!("the combo list file is invalid"))?;
-        let version = root
-            .get("fileFormatVersion")
-            .and_then(Value::as_f64)
-            .ok_or_else(|| anyhow!("the combo list file does not specify its version number"))? as i64;
+        let doc: Value = serde_json::from_str(text).context(tr("error-not-json"))?;
+        let root = doc.as_object().ok_or_else(|| anyhow!(tr("error-invalid-list")))?;
+        let version = root.get("fileFormatVersion").and_then(Value::as_f64).ok_or_else(|| anyhow!(tr("error-no-version")))? as i64;
         if version > FILE_FORMAT_VERSION {
-            bail!("the combo list file was created by a newer version of the application");
+            bail!(tr("error-newer-version"));
         }
         let mut library = Library::default();
         if version >= 3 {
-            let groups = root.get("groups").and_then(Value::as_array).ok_or_else(|| anyhow!("the list of groups is not a valid array"))?;
+            let groups = root.get("groups").and_then(Value::as_array).ok_or_else(|| anyhow!(tr("error-invalid-groups")))?;
             for g in groups {
-                let obj = g.as_object().ok_or_else(|| anyhow!("the group list contains an invalid group"))?;
+                let obj = g.as_object().ok_or_else(|| anyhow!(tr("error-invalid-group")))?;
                 let group = Group::from_json(obj)?;
                 if library.group(&group.uuid).is_none() {
                     library.groups.push(group);
                 }
             }
         }
-        let combos = root.get("combos").and_then(Value::as_array).ok_or_else(|| anyhow!("the list of combos is not a valid array"))?;
+        let combos = root.get("combos").and_then(Value::as_array).ok_or_else(|| anyhow!(tr("error-invalid-combos")))?;
         let mut skipped = 0;
         for c in combos {
             let Some(obj) = c.as_object() else {
@@ -528,7 +526,7 @@ impl Library {
     }
 
     pub fn load(path: &Path) -> Result<ParsedLibrary> {
-        let text = std::fs::read_to_string(path).with_context(|| format!("could not open file for reading: '{}'", path.display()))?;
+        let text = std::fs::read_to_string(path).with_context(|| tr!("error-open-file", path = path.display().to_string()))?;
         Self::from_json_str(&text)
     }
 
@@ -621,8 +619,8 @@ pub fn write_atomic(path: &Path, data: &[u8]) -> Result<()> {
         std::fs::create_dir_all(parent).ok();
     }
     let tmp = path.with_extension("tmp");
-    std::fs::write(&tmp, data).with_context(|| format!("could not write '{}'", tmp.display()))?;
-    std::fs::rename(&tmp, path).with_context(|| format!("could not write '{}'", path.display()))?;
+    std::fs::write(&tmp, data).with_context(|| tr!("error-write-file", path = tmp.display().to_string()))?;
+    std::fs::rename(&tmp, path).with_context(|| tr!("error-write-file", path = path.display().to_string()))?;
     Ok(())
 }
 
@@ -665,14 +663,14 @@ impl ImportAnalysis {
 
 /// Read a file to import: a Beeftext/ExpanderCraft JSON file, or a CSV file.
 pub fn read_import_file(path: &Path) -> Result<Vec<Combo>> {
-    let bytes = std::fs::read(path).with_context(|| format!("could not read '{}'", path.display()))?;
+    let bytes = std::fs::read(path).with_context(|| tr!("error-open-file", path = path.display().to_string()))?;
     let text = String::from_utf8_lossy(&bytes);
     match Library::from_json_str(&text) {
         Ok(parsed) => Ok(parsed.library.combos),
         Err(json_err) => {
             let combos = Library::parse_csv(&text).map_err(|_| json_err)?;
             if combos.is_empty() {
-                bail!("the file does not contain importable data");
+                bail!(tr("error-nothing-to-import"));
             }
             Ok(combos)
         }
