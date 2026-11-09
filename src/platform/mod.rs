@@ -1,15 +1,16 @@
 //! Platform abstraction layer.
 //!
-//! Each backend (Windows, macOS, Linux) provides the same set of free functions and implements the
-//! [`Keyboard`] and [`Clipboard`] traits. The rest of the application only talks to this module.
+//! Each backend (Windows, macOS) provides the same set of free functions and implements the
+//! [`Keyboard`] and [`Clipboard`] traits. The rest of the application only talks to this module, so that a
+//! Linux backend can be added later.
 //!
-//! | Feature                    | Windows                 | macOS                          | Linux                        |
-//! |----------------------------|-------------------------|--------------------------------|------------------------------|
-//! | Keyboard/mouse monitoring  | `WH_KEYBOARD_LL` hooks  | `CGEventTap`                   | `rdev` (X11 / XWayland)      |
-//! | Keystroke synthesis        | `SendInput`             | `CGEventPost`                  | `enigo` (XTest)              |
-//! | Clipboard backup           | all formats (Win32)     | text (`arboard`)               | text (`arboard`)             |
-//! | Active application         | process image name      | `NSWorkspace` frontmost app    | `_NET_ACTIVE_WINDOW` + /proc |
-//! | Auto-start                 | `HKCU\...\Run`          | LaunchAgent                    | XDG autostart                |
+//! | Feature                    | Windows                 | macOS                          |
+//! |----------------------------|-------------------------|--------------------------------|
+//! | Keyboard/mouse monitoring  | `WH_KEYBOARD_LL` hooks  | `CGEventTap`                   |
+//! | Keystroke synthesis        | `SendInput`             | `CGEventPost`                  |
+//! | Clipboard backup           | all formats (Win32)     | text and images (`arboard`)    |
+//! | Active application         | process image name      | `NSWorkspace` frontmost app    |
+//! | Auto-start                 | `HKCU\...\Run`          | LaunchAgent                    |
 
 use std::sync::Arc;
 
@@ -88,15 +89,10 @@ mod macos;
 #[cfg(target_os = "macos")]
 pub use self::macos::*;
 
-#[cfg(target_os = "linux")]
-mod linux;
-#[cfg(target_os = "linux")]
-pub use self::linux::*;
+#[cfg(not(any(windows, target_os = "macos")))]
+compile_error!("ExpanderCraft supports Windows and macOS (Linux support is planned).");
 
-#[cfg(not(any(windows, target_os = "macos", target_os = "linux")))]
-compile_error!("ExpanderCraft supports Windows, macOS and Linux.");
-
-#[cfg(not(windows))]
+#[cfg(target_os = "macos")]
 mod unix_common;
 
 /// Open a file or folder with the default application of the system.
@@ -105,12 +101,8 @@ pub fn open_path(path: &std::path::Path) {
         let mut c = std::process::Command::new("explorer");
         c.arg(path);
         c
-    } else if cfg!(target_os = "macos") {
-        let mut c = std::process::Command::new("open");
-        c.arg(path);
-        c
     } else {
-        let mut c = std::process::Command::new("xdg-open");
+        let mut c = std::process::Command::new("open");
         c.arg(path);
         c
     };

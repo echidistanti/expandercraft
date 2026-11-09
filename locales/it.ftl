@@ -17,7 +17,7 @@ app-reset = Ripristina
 app-clear = Cancella
 app-optional = Facoltativo
 app-enabled = Attivo
-app-default-with-value = Predefinito ({ $value })
+app-default-with-value = Valore predefinito ({ $value })
 app-portable-edition = Edizione portatile
 app-status-counts =
     { $combos } combo · { $groups ->
@@ -33,8 +33,8 @@ label-group = Gruppo
 menu-tools = Strumenti
 menu-help = Aiuto
 menu-import = Importa combo...
-menu-export-all = Esporta tutti i combo...
-menu-export-selected = Esporta i combo selezionati...
+menu-export-all = Esporta tutte le combo...
+menu-export-selected = Esporta le combo selezionate...
 menu-preferences = Preferenze...
 menu-hide-window = Nascondi finestra
 menu-quit = Esci
@@ -43,9 +43,10 @@ menu-edit-group = Modifica gruppo...
 menu-toggle-group = Attiva / disattiva gruppo
 menu-delete-group = Elimina gruppo...
 menu-backup = Salva una copia della lista...
-menu-restore = Ripristina la lista dei combo...
+menu-restore = Ripristina la lista delle combo...
 menu-restore-auto = Ripristina un backup automatico...
-menu-cheat-sheet = Genera un promemoria...
+menu-cheat-sheet = Crea una tabella riassuntiva (CSV)...
+menu-cheat-sheet-hint = Crea un file CSV con gruppo, nome, parola chiave e testo di tutte le combo, da stampare o aprire in un foglio di calcolo per ricordare le parole chiave.
 menu-open-data-folder = Apri la cartella dei dati
 menu-open-log = Apri il file di log
 menu-variables-reference = Guida alle variabili
@@ -53,7 +54,7 @@ menu-about = Informazioni su ExpanderCraft
 
 ## Main window: combo actions
 
-action-new-combo = Nuovo combo...
+action-new-combo = Nuova combo...
 action-edit = Modifica...
 action-duplicate = Duplica
 action-copy-snippet = Copia il testo negli appunti
@@ -67,21 +68,21 @@ action-delete = Elimina...
 ## Main window: groups, table, status bar
 
 groups-title = Gruppi
-groups-all = Tutti i combo
+groups-all = Tutte le combo
 group-enable = Attiva gruppo
 group-disable = Disattiva gruppo
 group-move-up = Sposta su
 group-move-down = Sposta giù
-combos-search = Cerca nei combo...
-label-new-combo = Nuovo combo
+combos-search = Cerca nelle combo...
+label-new-combo = Nuova combo
 label-name = Nome
 label-keyword = Parola chiave
 label-snippet = Testo
 column-last-used = Ultimo uso
-combos-empty-title = Ancora nessun combo
-combos-empty-text = Un combo associa una parola chiave breve a un testo. Digita la parola chiave in qualsiasi applicazione e viene sostituita dal testo.
-combos-create-first = Crea il primo combo
-combos-no-match = Nessun combo corrisponde alla ricerca.
+combos-empty-title = Ancora nessuna combo
+combos-empty-text = Una combo associa una parola chiave breve a un testo. Digita la parola chiave in qualsiasi applicazione e verrà sostituita dal testo.
+combos-create-first = Crea la prima combo
+combos-no-match = Nessuna combo corrisponde alla ricerca.
 status-active = Attivo
 status-paused = In pausa
 status-toggle-hint = Clicca per attivare o disattivare ExpanderCraft
@@ -90,57 +91,57 @@ status-toggle-hint = Clicca per attivare o disattivare ExpanderCraft
 
 matching-strict = Esatta
 matching-loose = Libera
-case-sensitive = Distingue maiuscole
-case-insensitive = Maiuscole indifferenti
+case-sensitive = Distingue maiuscole/minuscole
+case-insensitive = Ignora maiuscole/minuscole
 
 ## Main window: confirmations and messages
 
 confirm-delete-combos =
     { $count ->
-        [one] Eliminare il combo selezionato?
-       *[other] Eliminare i { $count } combo selezionati?
+        [one] Eliminare la combo selezionata?
+       *[other] Eliminare le { $count } combo selezionate?
     }
 confirm-delete-group = Eliminare il gruppo “{ $name }”?
 confirm-delete-group-with-combos =
     { $count ->
-        [one] Eliminare il gruppo “{ $name }” e il combo che contiene?
-       *[other] Eliminare il gruppo “{ $name }” e i { $count } combo che contiene?
+        [one] Eliminare il gruppo “{ $name }” e la combo che contiene?
+       *[other] Eliminare il gruppo “{ $name }” e le { $count } combo che contiene?
     }
-confirm-replace-library = Tutti i combo e i gruppi attuali verranno sostituiti dal contenuto del file di backup. Continuare?
+confirm-replace-library = Tutte le combo e tutti i gruppi attuali verranno sostituiti dal contenuto del file di backup. Continuare?
 msg-last-group = L'ultimo gruppo non si può eliminare.
 filter-combo-files = File di combo
 filter-all-files = Tutti i file
 filter-csv-textexpander = CSV (compatibile con TextExpander)
 file-name-backup = Backup ExpanderCraft { $date }
-file-name-cheat-sheet = Promemoria ExpanderCraft
+file-name-cheat-sheet = Tabella delle combo ExpanderCraft
 msg-import-failed = Impossibile importare il file.
-msg-exported = Combo esportati.
-msg-export-failed = Impossibile esportare i combo.
+msg-exported = Combo esportate.
+msg-export-failed = Impossibile esportare le combo.
 msg-backup-saved = Backup salvato.
-msg-cheat-sheet-done = Promemoria generato.
+msg-cheat-sheet-done = Tabella riassuntiva creata.
 msg-load-failed = Impossibile caricare il file.
 msg-combos-restored =
     { $count ->
-        [one] { $count } combo ripristinato.
-       *[other] { $count } combo ripristinati.
+        [one] { $count } combo ripristinata.
+       *[other] { $count } combo ripristinate.
     }
 msg-combos-imported =
     { $count ->
-        [one] { $count } combo importato.
-       *[other] { $count } combo importati.
+        [one] { $count } combo importata.
+       *[other] { $count } combo importate.
     }
 msg-backups-removed =
     { $count ->
         [one] { $count } file di backup eliminato.
        *[other] { $count } file di backup eliminati.
     }
-msg-library-load-failed = Impossibile caricare la lista dei combo.
+msg-library-load-failed = Impossibile caricare la lista delle combo.
 msg-library-copy-saved = Una copia del file è stata salvata come: { $path }
-msg-library-save-failed = Impossibile salvare la lista dei combo.
+msg-library-save-failed = Impossibile salvare la lista delle combo.
 msg-invalid-combos-ignored =
     { $count ->
-        [one] Durante il caricamento è stato ignorato { $count } combo non valido.
-       *[other] Durante il caricamento sono stati ignorati { $count } combo non validi.
+        [one] Durante il caricamento è stata ignorata { $count } combo non valida.
+       *[other] Durante il caricamento sono state ignorate { $count } combo non valide.
     }
 
 ## Combo editor
@@ -149,11 +150,12 @@ editor-edit-title = Modifica combo
 editor-keyword-hint = es. ffirma
 editor-matching = Corrispondenza
 editor-description = Descrizione
+editor-combo-enabled = Attiva
 editor-snippet-hint = Il testo che sostituisce la parola chiave
 editor-snippet-empty = Il testo non può essere vuoto.
-editor-warn-empty-keyword = Senza parola chiave, il combo si può inserire solo dal selettore.
+editor-warn-empty-keyword = Senza parola chiave, la combo si può inserire solo dal selettore.
 editor-warn-short-keyword = Le parole chiave brevi possono scattare per errore.
-editor-warn-duplicate-keyword = Anche “{ $name }” usa questa parola chiave: ne verrà scelto uno a caso.
+editor-warn-duplicate-keyword = Anche “{ $name }” usa questa parola chiave: ne verrà scelta una a caso.
 editor-insert-variable = Inserisci variabile
 editor-recording-shortcut = Premi la scorciatoia da inserire (Esc per annullare)...
 var-clipboard = Contenuto degli appunti
@@ -166,7 +168,7 @@ var-shifted-date-time = Data/ora spostata
 var-combo-upper = Combo in maiuscolo
 var-combo-lower = Combo in minuscolo
 var-combo-trim = Combo senza spazi ai bordi
-var-input = Input dell'utente
+var-input = Valore chiesto all'utente
 var-env = Variabile d'ambiente
 var-powershell = Script PowerShell
 var-delay = Pausa (ms)
@@ -181,15 +183,15 @@ group-edit-title = Modifica gruppo
 ## Import
 
 import-title = Importa combo
-import-new-combos = Nuovi combo: { $count }
+import-new-combos = Nuove combo: { $count }
 import-conflicts =
     { $count ->
-        [one] { $count } combo ha la stessa parola chiave di un combo esistente.
-       *[other] { $count } combo hanno la stessa parola chiave di un combo esistente.
+        [one] { $count } combo ha la stessa parola chiave di una combo esistente.
+       *[other] { $count } combo hanno la stessa parola chiave di una combo esistente.
     }
-import-skip = Salta i combo in conflitto
-import-overwrite = Sovrascrivi i combo esistenti
-import-overwrite-older = Sovrascrivi solo i combo esistenti più vecchi ({ $count })
+import-skip = Salta le combo in conflitto
+import-overwrite = Sovrascrivi le combo esistenti
+import-overwrite-older = Sovrascrivi solo le combo esistenti più vecchie ({ $count })
 import-into-group = Importa nel gruppo
 import-button = Importa ({ $count })
 import-action = Importa
@@ -197,7 +199,7 @@ import-action = Importa
 ## Backups
 
 restore-auto-title = Ripristina un backup automatico
-restore-auto-info = Ogni salvataggio della lista dei combo crea una copia di sicurezza.
+restore-auto-info = Ogni salvataggio della lista delle combo crea una copia di sicurezza.
 restore-no-backup = Nessun backup disponibile.
 restore-remove-all = Elimina tutti i backup...
 restore-action = Ripristina
@@ -208,7 +210,7 @@ confirm-remove-backups = Eliminare tutti i backup automatici?
 applist-excluded-title = Applicazioni escluse
 applist-excluded-help = ExpanderCraft non sostituisce nulla in queste applicazioni.
 applist-sensitive-title = Applicazioni sensibili
-applist-sensitive-help = Queste applicazioni non accettano l'incolla da tastiera: il testo viene digitato carattere per carattere.
+applist-sensitive-help = Queste applicazioni non permettono di incollare da tastiera: il testo viene digitato carattere per carattere.
 applist-emoji-title = Applicazioni escluse dalla sostituzione delle emoji
 applist-emoji-help = In queste applicazioni i codici delle emoji non vengono sostituiti.
 applist-format = Un nome di processo per riga (per esempio notepad.exe). Sono ammessi i caratteri jolly * e ?.
@@ -223,19 +225,19 @@ migration-text = Su questo computer c'è una lista di combo di Beeftext. Expande
 
 about-version = Versione { $version }
 about-tagline = Un espansore di testo scritto in Rust. Digiti una parola chiave, ottieni un testo.
-about-credits-beeftext = Ispirato a Beeftext di Xavier Michelon (licenza MIT). I file dei combo sono compatibili con Beeftext.
+about-credits-beeftext = Ispirato a Beeftext di Xavier Michelon (licenza MIT). I file delle combo sono compatibili con Beeftext.
 about-credits-emoji = Codici delle emoji da gemoji (licenza MIT).
 about-data-folder = Cartella dei dati: { $path }
 
 ## Variables reference
 
-help-intro = Le variabili vengono valutate ogni volta che scatta un combo. Usa { $escaped_brace } e { $escaped_backslash } per scrivere { $brace } e { $backslash } dentro una variabile.
+help-intro = Le variabili vengono valutate ogni volta che scatta una combo. Usa { $escaped_brace } e { $escaped_backslash } per scrivere { $brace } e { $backslash } dentro una variabile.
 help-clipboard = Il testo contenuto negli appunti.
 help-cursor = Dove si trova il cursore dopo la sostituzione.
 help-date = Data e/o ora correnti, nel formato del sistema.
 help-custom-format = Data/ora correnti con un formato personalizzato (d dd ddd dddd M MM MMM MMMM yy yyyy h hh H HH m mm s ss zzz AP w ww).
 help-shift = Data/ora spostata: unità y M w d h m s z, il segno è obbligatorio. Il formato può restare vuoto; i due punti finali sono obbligatori.
-help-combo = Il testo di un altro combo (anche { $upper }, { $lower } e { $trim }).
+help-combo = Il testo di un'altra combo (anche { $upper }, { $lower } e { $trim }).
 help-input = Chiede un valore all'utente. La stessa descrizione viene chiesta una volta sola.
 help-env = Il valore di una variabile d'ambiente.
 help-powershell = L'output di uno script PowerShell (timeout predefinito di 10 s, 0 lo disattiva).
@@ -255,16 +257,16 @@ prefs-section-general = Generale
 prefs-enabled = ExpanderCraft è attivo
 prefs-autostart = Avvia ExpanderCraft all'accesso
 prefs-portable-unavailable = Non disponibile nell'edizione portatile.
-prefs-play-sound = Riproduci un suono quando scatta un combo
+prefs-play-sound = Riproduci un suono quando scatta una combo
 prefs-custom-sound = Suono personalizzato
 prefs-section-substitution = Sostituzione
-prefs-automatic = Automatica: il combo scatta appena digiti la parola chiave
+prefs-automatic = Automatica: la combo scatta appena digiti la parola chiave
 prefs-manual = Manuale: digita la parola chiave, poi premi la scorciatoia
 prefs-trigger-shortcut = Scorciatoia di attivazione
-prefs-trigger-on-space = Fai scattare i combo con uno spazio dopo la parola chiave
+prefs-trigger-on-space = Fai scattare le combo con uno spazio dopo la parola chiave
 prefs-keep-space = Mantieni lo spazio dopo il testo
-prefs-section-picker = Selettore dei combo
-prefs-enable-picker = Attiva il selettore dei combo
+prefs-section-picker = Selettore delle combo
+prefs-enable-picker = Attiva il selettore delle combo
 prefs-shortcut = Scorciatoia
 prefs-section-toggle = Scorciatoia per attivare / disattivare
 prefs-use-toggle = Usa una scorciatoia per attivare o disattivare ExpanderCraft
@@ -276,23 +278,25 @@ prefs-section-theme = Tema
 prefs-theme-system = Come il sistema
 prefs-theme-light = Chiaro
 prefs-theme-dark = Scuro
-prefs-section-defaults = Valori predefiniti dei nuovi combo
-prefs-matching-help = Esatta: il testo digitato deve coincidere con la parola chiave. Libera: il combo può scattare anche in mezzo a una parola.
+prefs-section-defaults = Valori predefiniti delle nuove combo
+prefs-matching-help = Esatta: il testo digitato deve coincidere con la parola chiave. Libera: la combo può scattare anche in mezzo a una parola.
 prefs-section-warnings = Avvisi
 prefs-warn-short = Avvisa se la parola chiave ha meno di 3 caratteri
 prefs-warn-empty = Avvisa se la parola chiave è vuota
-prefs-section-combo-file = File della lista dei combo
+prefs-section-combo-file = File della lista delle combo
 prefs-change-folder = Cambia cartella...
 prefs-default-folder = Usa la cartella predefinita
-prefs-sync-folder-hint = Con una cartella sincronizzata (OneDrive, Dropbox...) puoi condividere i combo tra più computer.
+prefs-sync-folder-hint = Con una cartella sincronizzata (OneDrive, Dropbox...) puoi condividere le combo tra più computer.
 msg-combo-list-moved =
-    Ora la lista dei combo viene salvata in:
+    Ora la lista delle combo viene salvata in:
     { $path }
 prefs-section-emoji = Codici delle emoji
 prefs-emoji-enable = Sostituisci i codici delle emoji
 prefs-left-delimiter = Delimitatore sinistro
 prefs-right-delimiter = Delimitatore destro
 prefs-example = Esempio:
+prefs-emoji-list = Elenco completo dei codici delle emoji (shortcode)
+prefs-emoji-list-hint = L'elenco dei codici di GitHub, quelli usati da ExpanderCraft. La sezione “GitHub Custom Emoji” e le emoji più recenti potrebbero non funzionare.
 prefs-excluded-apps = Applicazioni escluse...
 prefs-sensitive-apps = Applicazioni sensibili...
 prefs-show-emojis-in-picker = Mostra le emoji nel selettore (dopo 3 caratteri)
@@ -301,7 +305,7 @@ prefs-restore-clipboard = Ripristina gli appunti dopo una sostituzione
 prefs-shift-insert = Incolla con Maiusc+Ins invece di Ctrl+V
 prefs-keystroke-delay = Pausa tra i tasti durante la digitazione (ms)
 prefs-section-backup = Backup
-prefs-auto-backup = Salva automaticamente una copia della lista dei combo
+prefs-auto-backup = Salva automaticamente una copia della lista delle combo
 prefs-custom-location = Percorso personalizzato
 prefs-custom-executable = Eseguibile personalizzato
 prefs-powershell-hint = Per esempio pwsh.exe (PowerShell 7) al posto di Windows PowerShell.
@@ -313,9 +317,9 @@ msg-autostart-failed = Impossibile modificare l'avvio automatico.
 
 ## Combo picker and input dialog
 
-picker-title = ExpanderCraft - Selettore dei combo
-picker-search = Cerca un combo...
-picker-no-match = Nessun combo corrispondente.
+picker-title = ExpanderCraft - Selettore delle combo
+picker-search = Cerca una combo...
+picker-no-match = Nessuna combo corrispondente.
 picker-help = ↑↓ per scegliere · Invio per inserire · Esc per chiudere
 
 ## System tray
@@ -328,17 +332,15 @@ tray-tooltip-paused = ExpanderCraft (in pausa)
 error-open-file = Impossibile aprire il file “{ $path }”.
 error-write-file = Impossibile scrivere il file “{ $path }”.
 error-not-json = Il file non è un JSON valido.
-error-invalid-list = Il file della lista dei combo non è valido.
-error-no-version = Il file della lista dei combo non indica il numero di versione.
-error-newer-version = Il file della lista dei combo è stato creato da una versione più recente dell'applicazione.
+error-invalid-list = Il file della lista delle combo non è valido.
+error-no-version = Il file della lista delle combo non indica il numero di versione.
+error-newer-version = Il file della lista delle combo è stato creato da una versione più recente dell'applicazione.
 error-invalid-groups = L'elenco dei gruppi non è valido.
 error-invalid-group = L'elenco dei gruppi contiene un gruppo non valido.
-error-invalid-combos = L'elenco dei combo non è valido.
+error-invalid-combos = L'elenco delle combo non è valido.
 error-nothing-to-import = Il file non contiene dati importabili.
 error-registry = Impossibile aggiornare il registro di Windows (errore { $code }).
 error-no-config-folder = Impossibile trovare la cartella di configurazione.
-platform-x11-required = Il monitoraggio della tastiera non è disponibile: serve un display X11.
-platform-wayland = Sessione Wayland: per ora ExpanderCraft funziona solo nelle applicazioni X11/XWayland.
 platform-macos-permissions = Concedi a ExpanderCraft i permessi Accessibilità e Monitoraggio input in Impostazioni di Sistema › Privacy e sicurezza, poi riavvialo.
 platform-hook-failed = Impossibile intercettare la tastiera: le sostituzioni sono disattivate.
 

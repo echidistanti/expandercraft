@@ -39,7 +39,6 @@ pub enum RecordTarget {
 pub struct ExpanderApp {
     pub shared: Arc<AppShared>,
     ui_rx: Receiver<UiMsg>,
-    #[cfg(not(target_os = "linux"))]
     tray: Option<tray::Tray>,
     pub main_visible: bool,
     quitting: bool,
@@ -78,10 +77,7 @@ impl ExpanderApp {
         shared.ui.set_context(ctx.clone());
         style::setup(&ctx);
 
-        #[cfg(not(target_os = "linux"))]
         let tray = tray::Tray::create(shared.clone());
-        #[cfg(target_os = "linux")]
-        tray::spawn_linux_tray(shared.clone());
 
         let mut messages: Vec<(String, String)> =
             shared.startup_errors.lock().drain(..).map(|e| (tr("app-error").to_string(), e)).collect();
@@ -95,7 +91,6 @@ impl ExpanderApp {
         let mut app = Self {
             shared: shared.clone(),
             ui_rx,
-            #[cfg(not(target_os = "linux"))]
             tray,
             main_visible: !start_hidden,
             quitting: false,
@@ -289,7 +284,6 @@ impl eframe::App for ExpanderApp {
         }
         self.handle_messages(ctx);
 
-        #[cfg(not(target_os = "linux"))]
         if let Some(t) = &mut self.tray {
             t.update(self.shared.is_enabled());
         }

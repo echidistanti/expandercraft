@@ -23,8 +23,7 @@ impl AppPaths {
         let base = directories::BaseDirs::new()
             .map(|b| b.data_local_dir().to_path_buf())
             .unwrap_or_else(|| exe_dir.clone().unwrap_or_else(|| PathBuf::from(".")));
-        let folder = if cfg!(target_os = "linux") { "expandercraft" } else { APP_NAME };
-        Self { data_dir: base.join(folder), portable: false }
+        Self { data_dir: base.join(APP_NAME), portable: false }
     }
 
     pub fn ensure_exists(&self) {

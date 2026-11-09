@@ -320,7 +320,7 @@ mod tests {
         };
         assert_eq!(tr_in(Lang::En, "msg-combos-imported", Some(&n(1))).unwrap(), "1 combo was imported.");
         assert_eq!(tr_in(Lang::En, "msg-combos-imported", Some(&n(0))).unwrap(), "0 combos were imported.");
-        assert_eq!(tr_in(Lang::It, "msg-combos-imported", Some(&n(3))).unwrap(), "3 combo importati.");
+        assert_eq!(tr_in(Lang::It, "msg-combos-imported", Some(&n(3))).unwrap(), "3 combo importate.");
         // in French, 0 and 1 are singular
         assert_eq!(tr_in(Lang::Fr, "msg-combos-imported", Some(&n(0))).unwrap(), "0 combo a été importé.");
         assert_eq!(tr_in(Lang::Fr, "msg-combos-imported", Some(&n(2))).unwrap(), "2 combos ont été importés.");

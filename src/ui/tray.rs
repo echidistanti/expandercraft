@@ -103,16 +103,3 @@ impl Tray {
         let _ = self.icon.set_tooltip(Some(tooltip(enabled)));
     }
 }
-
-/// On Linux the tray lives in a GTK thread; it polls the enabled state to update itself.
-#[cfg(target_os = "linux")]
-pub fn spawn_linux_tray(shared: Arc<AppShared>) {
-    crate::platform::spawn_tray_thread(move || {
-        let mut tray = Tray::create(shared.clone())?;
-        gtk::glib::timeout_add_local(std::time::Duration::from_millis(300), move || {
-            tray.update(shared.is_enabled());
-            gtk::glib::ControlFlow::Continue
-        });
-        None
-    });
-}

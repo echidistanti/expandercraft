@@ -1,4 +1,4 @@
-//! Pieces shared by the macOS and Linux backends.
+//! Parts of the macOS backend built on portable crates (`arboard`, Unix sockets), reusable by a future Linux backend.
 
 use std::path::PathBuf;
 use std::sync::OnceLock;
@@ -32,7 +32,9 @@ impl Clipboard for ArboardClipboard {
     }
 
     fn set_text(&mut self, text: &str) -> bool {
-        Self::with(|cb| cb.set_text(text.to_string()).ok()).is_some()
+        // keep the snippet out of clipboard history managers
+        use arboard::SetExtApple as _;
+        Self::with(|cb| cb.set().exclude_from_history().text(text.to_string()).ok()).is_some()
     }
 
     fn backup(&mut self) -> Option<ClipboardBackup> {
