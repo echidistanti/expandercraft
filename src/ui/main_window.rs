@@ -171,7 +171,7 @@ impl ExpanderApp {
                 actions.push(Action::RestoreAuto);
             }
             ui.separator();
-            if ui.button(tr("menu-cheat-sheet")).clicked() {
+            if ui.button(tr("menu-cheat-sheet")).on_hover_text(tr("menu-cheat-sheet-hint")).clicked() {
                 actions.push(Action::CheatSheet);
             }
             ui.separator();

@@ -149,6 +149,9 @@ impl ExpanderApp {
     }
 }
 
+/// The list of GitHub (gemoji) emoji shortcodes, by category.
+const EMOJI_LIST_URL: &str = "https://github.com/ikatyang/emoji-cheat-sheet";
+
 fn section(ui: &mut egui::Ui, title: &str) {
     ui.add_space(6.0);
     ui.label(RichText::new(title).strong().color(style::accent(ui)));
@@ -336,6 +339,9 @@ fn emojis_tab(ui: &mut egui::Ui, p: &mut Preferences, extras: &mut Vec<Extra>) {
             extras.push(Extra::AppList(AppListKind::EmojiExcluded));
         }
     });
+    // usable even before enabling the substitution, to see which codes exist
+    ui.add_space(4.0);
+    ui.hyperlink_to(format!("🔗 {}", tr("prefs-emoji-list")), EMOJI_LIST_URL).on_hover_text(tr("prefs-emoji-list-hint"));
     section(ui, tr("prefs-section-picker"));
     ui.checkbox(&mut p.show_emojis_in_picker, tr("prefs-show-emojis-in-picker"));
 }

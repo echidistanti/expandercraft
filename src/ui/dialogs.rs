@@ -366,7 +366,7 @@ impl ExpanderApp {
                 ed.cursor = Some(range.primary.index.0);
             }
             ui.add_space(4.0);
-            ui.checkbox(&mut ed.combo.enabled, tr("app-enabled"));
+            ui.checkbox(&mut ed.combo.enabled, tr("editor-combo-enabled"));
             if ed.combo.snippet.is_empty() {
                 ui.label(muted(ui, tr("editor-snippet-empty")).small());
             }
