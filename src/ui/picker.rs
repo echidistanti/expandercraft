@@ -27,6 +27,8 @@ enum PickerKind {
 struct PickerEntry {
     kind: PickerKind,
     title: String,
+    /// The title in lowercase, to sort without converting it at each comparison.
+    sort_title: String,
     keyword: String,
     preview: String,
     haystack: String,
@@ -53,6 +55,7 @@ impl PickerState {
             .map(|c| PickerEntry {
                 kind: PickerKind::Combo(c.uuid),
                 title: c.display_name(),
+                sort_title: c.display_name().to_lowercase(),
                 keyword: c.keyword.clone(),
                 preview: preview(&c.snippet, 110),
                 haystack: format!("{}\n{}\n{}\n{}\n{}", c.name, c.keyword, c.snippet, c.description, lib.group_name(&c.group))
@@ -63,14 +66,18 @@ impl PickerState {
         let emojis = if shared.prefs.read().show_emojis_in_picker {
             let last = shared.emoji_last_use.lock().clone();
             crate::emoji::all()
-                .into_iter()
-                .map(|e| PickerEntry {
-                    kind: PickerKind::Emoji { shortcode: e.shortcode.to_string(), emoji: e.emoji.to_string() },
-                    title: format!("{}  {}", e.emoji, e.name),
-                    keyword: format!(":{}:", e.shortcode),
-                    preview: String::new(),
-                    haystack: format!("{} {}", e.shortcode, e.name.to_lowercase()),
-                    last_use: last.get(e.shortcode).copied(),
+                .iter()
+                .map(|e| {
+                    let title = format!("{}  {}", e.emoji, e.name);
+                    PickerEntry {
+                        kind: PickerKind::Emoji { shortcode: e.shortcode().to_string(), emoji: e.emoji.to_string() },
+                        sort_title: title.to_lowercase(),
+                        title,
+                        keyword: format!(":{}:", e.shortcode()),
+                        preview: String::new(),
+                        haystack: format!("{} {}", e.shortcode(), e.name.to_lowercase()),
+                        last_use: last.get(e.shortcode()).copied(),
+                    }
                 })
                 .collect()
         } else {
@@ -78,23 +85,23 @@ impl PickerState {
         };
         Self { query: String::new(), selected: 0, combos, emojis, frames: 0, was_focused: false, opened: Instant::now() }
     }
+}
 
-    fn results(&self) -> Vec<&PickerEntry> {
-        let words: Vec<String> = self.query.to_lowercase().split_whitespace().map(str::to_string).collect();
-        let matches = |e: &&PickerEntry| words.iter().all(|w| e.haystack.contains(w.as_str()));
-        let mut combos: Vec<&PickerEntry> = self.combos.iter().filter(matches).collect();
-        let by_use = |a: &&PickerEntry, b: &&PickerEntry| {
-            b.last_use.cmp(&a.last_use).then_with(|| a.title.to_lowercase().cmp(&b.title.to_lowercase()))
-        };
-        combos.sort_by(by_use);
-        if self.query.trim().chars().count() >= 3 {
-            let mut emojis: Vec<&PickerEntry> = self.emojis.iter().filter(matches).collect();
-            emojis.sort_by(by_use);
-            combos.extend(emojis);
-        }
-        combos.truncate(MAX_RESULTS);
-        combos
+/// The entries matching the query, most recently used first. A function of the fields (not a method), so that
+/// `selected` can still be changed while the results are borrowed.
+fn matching<'a>(query: &str, combos: &'a [PickerEntry], emojis: &'a [PickerEntry]) -> Vec<&'a PickerEntry> {
+    let words: Vec<String> = query.to_lowercase().split_whitespace().map(str::to_string).collect();
+    let matches = |e: &&PickerEntry| words.iter().all(|w| e.haystack.contains(w.as_str()));
+    let by_use = |a: &&PickerEntry, b: &&PickerEntry| b.last_use.cmp(&a.last_use).then_with(|| a.sort_title.cmp(&b.sort_title));
+    let mut found: Vec<&PickerEntry> = combos.iter().filter(matches).collect();
+    found.sort_by(by_use);
+    if query.trim().chars().count() >= 3 {
+        let mut emojis: Vec<&PickerEntry> = emojis.iter().filter(matches).collect();
+        emojis.sort_by(by_use);
+        found.extend(emojis);
     }
+    found.truncate(MAX_RESULTS);
+    found
 }
 
 pub struct InputPrompt {
@@ -248,13 +255,6 @@ fn picker_ui(ui: &mut egui::Ui, state: &mut PickerState) -> Option<Option<Picker
             i.consume_key(Modifiers::NONE, Key::Escape),
         )
     });
-    let results_len = state.results().len();
-    if down && results_len > 0 {
-        state.selected = (state.selected + 1).min(results_len - 1);
-    }
-    if up {
-        state.selected = state.selected.saturating_sub(1);
-    }
     if escape {
         outcome = Some(None);
     }
@@ -279,9 +279,15 @@ fn picker_ui(ui: &mut egui::Ui, state: &mut PickerState) -> Option<Option<Picker
             }
         });
         ui.separator();
+        let results = matching(&state.query, &state.combos, &state.emojis);
+        if down && !results.is_empty() {
+            state.selected = (state.selected + 1).min(results.len() - 1);
+        }
+        if up {
+            state.selected = state.selected.saturating_sub(1);
+        }
         let current = state.selected;
         let mut hovered: Option<usize> = None;
-        let results = state.results();
         if results.is_empty() {
             ui.add_space(20.0);
             ui.vertical_centered(|ui| ui.label(muted(ui, tr("picker-no-match"))));

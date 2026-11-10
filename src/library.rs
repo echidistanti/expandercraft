@@ -654,6 +654,9 @@ impl Library {
 
 /// Write a file atomically: write a temporary sibling, then rename it.
 pub fn write_atomic(path: &Path, data: &[u8]) -> Result<()> {
+    // the engine and the user interface can save the same file at the same moment, with the same temporary file
+    static WRITE_LOCK: parking_lot::Mutex<()> = parking_lot::Mutex::new(());
+    let _one_at_a_time = WRITE_LOCK.lock();
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent).ok();
     }
@@ -706,6 +709,8 @@ pub fn read_import_file(path: &Path) -> Result<Vec<Combo>> {
     let text = String::from_utf8_lossy(&bytes);
     match Library::from_json_str(&text) {
         Ok(parsed) => Ok(parsed.library.combos),
+        // a JSON file the parser refuses (newer format...) would give garbage combos if read as CSV
+        Err(json_err) if text.trim_start_matches('\u{feff}').trim_start().starts_with('{') => Err(json_err),
         Err(json_err) => {
             let combos = Library::parse_csv(&text).map_err(|_| json_err)?;
             if combos.is_empty() {
@@ -871,6 +876,21 @@ mod tests {
         assert_eq!(combos.len(), 2);
         assert_eq!(combos[0].snippet, "Hello, world");
         assert_eq!(combos[1].name, "kw2");
+    }
+
+    #[test]
+    fn refused_json_is_not_imported_as_csv() {
+        let path = std::env::temp_dir().join(format!("expandercraft-import-test-{}.json", std::process::id()));
+        let newer = r#"{
+    "combos": [ {"keyword": "addr", "snippet": "Via Roma 1, Napoli", "uuid": "{8c1b4a2e-1111-4c5f-9f3a-7a4b2c3d4e5f}"} ],
+    "fileFormatVersion": 11,
+    "groups": []
+}"#;
+        std::fs::write(&path, newer).unwrap();
+        assert!(read_import_file(&path).is_err());
+        std::fs::write(&path, "kw,\"Via Roma 1, Napoli\",Address\n").unwrap();
+        assert_eq!(read_import_file(&path).unwrap()[0].snippet, "Via Roma 1, Napoli");
+        let _ = std::fs::remove_file(&path);
     }
 
     #[test]

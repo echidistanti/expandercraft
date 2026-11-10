@@ -353,19 +353,22 @@ impl ExpanderApp {
                 last_used: c.last_use,
             })
             .collect();
+        // sorted on the column, then on the name; each text is put in lowercase once, not at each comparison
         let (col, asc) = self.sort;
-        rows.sort_by(|a, b| {
-            let o = match col {
-                SortColumn::Enabled => a.enabled.cmp(&b.enabled),
-                SortColumn::Name => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
-                SortColumn::Keyword => a.keyword.to_lowercase().cmp(&b.keyword.to_lowercase()),
-                SortColumn::Snippet => a.snippet.to_lowercase().cmp(&b.snippet.to_lowercase()),
-                SortColumn::Group => a.group.to_lowercase().cmp(&b.group.to_lowercase()),
-                SortColumn::LastUsed => a.last_used.cmp(&b.last_used),
+        rows.sort_by_cached_key(|r| {
+            let text = match col {
+                SortColumn::Keyword => r.keyword.to_lowercase(),
+                SortColumn::Snippet => r.snippet.to_lowercase(),
+                SortColumn::Group => r.group.to_lowercase(),
+                SortColumn::Enabled | SortColumn::Name | SortColumn::LastUsed => String::new(),
             };
-            let o = o.then_with(|| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
-            if asc { o } else { o.reverse() }
+            let enabled = col == SortColumn::Enabled && r.enabled;
+            let last_used = if col == SortColumn::LastUsed { r.last_used } else { None };
+            (enabled, last_used, text, r.name.to_lowercase())
         });
+        if !asc {
+            rows.reverse();
+        }
         rows
     }
 

@@ -155,7 +155,8 @@ impl VariableHost for Host<'_> {
 }
 
 fn random_index(len: usize) -> usize {
-    if len <= 1 { 0 } else { rand::random_range(0..len) }
+    // a version 4 UUID comes from the random generator of the system
+    if len <= 1 { 0 } else { (Uuid::new_v4().as_u128() % len as u128) as usize }
 }
 
 /// Run a PowerShell script and return its standard output (empty on error or timeout).
@@ -276,22 +277,35 @@ impl Engine {
                     Err(_) => break,
                 },
             };
-            match msg {
-                EngineMsg::Quit => break,
-                EngineMsg::ResetBuffer => self.buffer.clear(),
-                EngineMsg::Input(ev) => self.on_input(ev),
-                EngineMsg::PickerCombo(uuid) => self.on_picker_combo(uuid),
-                EngineMsg::PickerEmoji { shortcode, emoji } => self.on_picker_emoji(&shortcode, &emoji),
-                EngineMsg::PickerCancelled => {
-                    self.buffer.clear();
-                    if let Some(w) = self.picker_return.take() {
-                        platform::activate_window(w);
-                    }
-                }
+            if matches!(msg, EngineMsg::Quit) {
+                break;
+            }
+            // an error (a panic) while handling one event must not stop the expansions until the next restart
+            if std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| self.handle(msg))).is_err() {
+                log::error!("An error occurred while handling an event: it was ignored.");
+                self.shared.end_substitution();
+                self.buffer.clear();
+                self.space_swallowed = false;
             }
         }
         self.clipboard.finish();
         log::info!("Engine stopped.");
+    }
+
+    fn handle(&mut self, msg: EngineMsg) {
+        match msg {
+            EngineMsg::Quit => {}
+            EngineMsg::ResetBuffer => self.buffer.clear(),
+            EngineMsg::Input(ev) => self.on_input(ev),
+            EngineMsg::PickerCombo(uuid) => self.on_picker_combo(uuid),
+            EngineMsg::PickerEmoji { shortcode, emoji } => self.on_picker_emoji(&shortcode, &emoji),
+            EngineMsg::PickerCancelled => {
+                self.buffer.clear();
+                if let Some(w) = self.picker_return.take() {
+                    platform::activate_window(w);
+                }
+            }
+        }
     }
 
     fn on_input(&mut self, ev: InputEvent) {
@@ -354,7 +368,10 @@ impl Engine {
             return;
         }
         if picker {
-            self.picker_return = platform::foreground_window();
+            // pressed again while the picker is open: keep the window to go back to
+            if !platform::is_own_process_foreground() {
+                self.picker_return = platform::foreground_window();
+            }
             self.buffer.clear();
             self.shared.ui.send(UiMsg::ShowPicker);
             return;
@@ -511,6 +528,7 @@ impl Engine {
         }
         let cursor = cursor.map(|c| c + usize::from(final_space));
 
+        // a panic in here is caught by `run`, which also ends the substitution
         self.shared.begin_substitution();
         // A keyword can end with a character typed with a modifier (@ is AltGr+ò on an Italian keyboard). Sending
         // keys while the user holds it mixes the two: the application can see a lone Alt press, which activates
@@ -519,33 +537,28 @@ impl Engine {
         while self.keyboard.modifiers_held() && wait_start.elapsed() < MODIFIER_RELEASE_TIMEOUT {
             sleep_ms(10);
         }
-        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            if erase > 0 {
-                self.keyboard.erase(erase);
+        if erase > 0 {
+            self.keyboard.erase(erase);
+        }
+        let count = fragments.len();
+        for (i, f) in fragments.iter().enumerate() {
+            match f {
+                Fragment::Text(t) => self.insert_text(t, prefs),
+                Fragment::Key { key, repeat } => self.keyboard.press_key(*key, *repeat, prefs.delay_between_keystrokes_ms),
+                Fragment::Shortcut(s) => self.keyboard.press_shortcut(s),
+                Fragment::Delay(ms) => sleep_ms(*ms),
             }
-            let count = fragments.len();
-            for (i, f) in fragments.iter().enumerate() {
-                match f {
-                    Fragment::Text(t) => self.insert_text(t, prefs),
-                    Fragment::Key { key, repeat } => self.keyboard.press_key(*key, *repeat, prefs.delay_between_keystrokes_ms),
-                    Fragment::Shortcut(s) => self.keyboard.press_shortcut(s),
-                    Fragment::Delay(ms) => sleep_ms(*ms),
-                }
-                if i + 1 != count {
-                    sleep_ms(DELAY_BETWEEN_FRAGMENTS_MS);
-                }
+            if i + 1 != count {
+                sleep_ms(DELAY_BETWEEN_FRAGMENTS_MS);
             }
-            if let Some(n) = cursor
-                && n > 0
-            {
-                self.keyboard.move_left(n);
-            }
-        }));
+        }
+        if let Some(n) = cursor
+            && n > 0
+        {
+            self.keyboard.move_left(n);
+        }
         self.shared.end_substitution();
         self.buffer.clear();
-        if result.is_err() {
-            log::error!("An error occurred while rendering a snippet.");
-        }
     }
 
     fn insert_text(&mut self, text: &str, prefs: &Preferences) {
@@ -750,6 +763,71 @@ mod tests {
         // the restore of the first paste is still pending: #{clipboard} must see the original content
         type_str(&mut e, "a1");
         assert!(log.lock().contains(&"clip([user clipboard])".to_string()));
+    }
+
+    #[test]
+    fn copied_text_is_pasted_not_run() {
+        let (mut e, log) = engine_with(&[("kw", "> #{clipboard}"), ("ht", "##{clipboard}")], Preferences::default());
+        let copied = "#{shortcut:Win+R}#{delay:500}cmd#{key:enter}";
+        e.clipboard = ClipboardKeeper::new(Box::new(MockClipboard(log.clone(), Some(copied.into()))));
+        type_str(&mut e, "kw");
+        assert_eq!(*log.lock(), vec!["erase(2)".to_string(), format!("clip(> {copied})"), "paste".into()]);
+        // a '#' written by the snippet just before the copied text does not make it run either
+        e.clipboard = ClipboardKeeper::new(Box::new(MockClipboard(log.clone(), Some("{key:enter}".into()))));
+        log.lock().clear();
+        e.on_input(InputEvent::Breaker);
+        type_str(&mut e, "ht");
+        assert_eq!(*log.lock(), vec!["erase(2)", "clip(#{key:enter})", "paste"]);
+    }
+
+    #[test]
+    fn huge_date_shift_does_not_crash() {
+        let (mut e, log) = engine_with(&[("kw", "#{dateTime:+100000000d:yyyy}")], Preferences::default());
+        type_str(&mut e, "kw");
+        assert_eq!(log.lock()[0], "erase(2)");
+    }
+
+    /// Panics the first time it erases a keyword.
+    struct PanickingKeyboard(MockKeyboard, bool);
+    impl Keyboard for PanickingKeyboard {
+        fn erase(&mut self, count: usize) {
+            if !std::mem::replace(&mut self.1, true) {
+                panic!("test panic");
+            }
+            self.0.erase(count);
+        }
+        fn type_text(&mut self, text: &str, delay_ms: u64) {
+            self.0.type_text(text, delay_ms);
+        }
+        fn paste(&mut self, s: bool) {
+            self.0.paste(s);
+        }
+        fn press_key(&mut self, key: Key, repeat: u32, d: u64) {
+            self.0.press_key(key, repeat, d);
+        }
+        fn press_shortcut(&mut self, s: &Shortcut) {
+            self.0.press_shortcut(s);
+        }
+        fn move_left(&mut self, count: usize) {
+            self.0.move_left(count);
+        }
+    }
+
+    #[test]
+    fn engine_survives_a_panic() {
+        let (mut e, log) = engine_with(&[("kw", "x")], Preferences::default());
+        e.keyboard = Box::new(PanickingKeyboard(MockKeyboard(log.clone()), false));
+        let shared = e.shared.clone();
+        for _ in 0..2 {
+            for c in "kw".chars() {
+                shared.engine_tx.send(EngineMsg::Input(InputEvent::Char(c))).unwrap();
+            }
+        }
+        shared.engine_tx.send(EngineMsg::Quit).unwrap();
+        e.run();
+        // the first substitution failed, the second one worked (and the clipboard was restored on quitting)
+        assert!(!shared.substituting.load(std::sync::atomic::Ordering::SeqCst));
+        assert_eq!(*log.lock(), vec!["erase(2)", "clip(x)", "paste", "restore(user clipboard)"]);
     }
 
     #[test]

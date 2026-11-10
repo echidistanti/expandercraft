@@ -122,7 +122,9 @@ impl ExpanderApp {
             if shared.library.read().combos.is_empty()
                 && let Some(path) = crate::paths::beeftext_library_candidates().into_iter().next()
             {
-                app.dialog = Some(Dialog::BeeftextMigration(path));
+                // the number of combos and groups, read once (the dialog is drawn many times)
+                let summary = crate::library::Library::load(&path).ok().map(|p| (p.library.combos.len(), p.library.groups.len()));
+                app.dialog = Some(Dialog::BeeftextMigration(path, summary));
             }
             shared.prefs.write().already_launched = true;
             shared.save_prefs();
@@ -247,8 +249,6 @@ impl ExpanderApp {
                     popups.input_linger_until = None;
                 }
                 UiMsg::ShortcutRecorded(sc) => self.assign_recorded(sc),
-                UiMsg::EnabledChanged => {}
-                UiMsg::LibraryChanged => {}
                 UiMsg::Quit => self.quit(ctx),
             }
         }

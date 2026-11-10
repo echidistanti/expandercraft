@@ -4,6 +4,7 @@
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::shortcut::{Key, Shortcut};
+use crate::variables::LITERAL_MARK;
 
 pub const CURSOR_VARIABLE: &str = "#{cursor}";
 
@@ -114,12 +115,18 @@ pub fn extract_cursor(text: &str) -> (String, Option<usize>) {
         return (text.to_string(), None);
     };
     let after = &text[first + CURSOR_VARIABLE.len()..];
-    let shift = printable_len(&strip_specials(&remove_cursors(after)));
+    let shift = printable_len(&strip_specials(&remove_cursors(after)).replace(LITERAL_MARK, ""));
     (remove_cursors(text), Some(shift))
 }
 
-/// Split a snippet (already evaluated, cursor removed) into fragments.
+/// Split a snippet (already evaluated, cursor removed) into fragments. The texts lose their [`LITERAL_MARK`]s.
 pub fn split_fragments(text: &str) -> Vec<Fragment> {
+    fn push_text(result: &mut Vec<Fragment>, current: &mut String) {
+        current.retain(|c| c != LITERAL_MARK);
+        if !current.is_empty() {
+            result.push(Fragment::Text(std::mem::take(current)));
+        }
+    }
     let mut result: Vec<Fragment> = Vec::new();
     let mut current = String::new();
     let mut pos = 0;
@@ -129,9 +136,7 @@ pub fn split_fragments(text: &str) -> Vec<Fragment> {
             Some((len, fragment)) => {
                 current.push_str(&text[pos..start]);
                 if let Some(f) = fragment {
-                    if !current.is_empty() {
-                        result.push(Fragment::Text(std::mem::take(&mut current)));
-                    }
+                    push_text(&mut result, &mut current);
                     result.push(f);
                 }
                 pos = start + len;
@@ -143,9 +148,7 @@ pub fn split_fragments(text: &str) -> Vec<Fragment> {
         }
     }
     current.push_str(&text[pos..]);
-    if !current.is_empty() {
-        result.push(Fragment::Text(current));
-    }
+    push_text(&mut result, &mut current);
     result
 }
 
@@ -183,5 +186,14 @@ mod tests {
         assert_eq!(extract_cursor("a#{cursor}b#{cursor}c"), ("abc".into(), Some(2)));
         assert_eq!(extract_cursor("no cursor"), ("no cursor".into(), None));
         assert_eq!(extract_cursor("x#{cursor}\r\n👍🏽é"), ("x\r\n👍🏽é".into(), Some(3)));
+        // the marks of a text that comes from outside the snippet do not count
+        assert_eq!(extract_cursor("#{cursor}a\u{E000}{b}").1, Some(4));
+    }
+
+    #[test]
+    fn marked_text_is_never_run() {
+        let marked = "#\u{E000}{shortcut:Win+R}#\u{E000}{key:enter}#\u{E000}{cursor}";
+        assert_eq!(extract_cursor(marked).1, None);
+        assert_eq!(split_fragments(marked), vec![Fragment::Text("#{shortcut:Win+R}#{key:enter}#{cursor}".into())]);
     }
 }

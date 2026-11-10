@@ -129,13 +129,27 @@ impl Default for Preferences {
 
 impl Preferences {
     pub fn load(path: &Path) -> Self {
-        match std::fs::read_to_string(path) {
-            Ok(text) => serde_json::from_str(&text).unwrap_or_else(|e| {
-                log::warn!("The preferences file is invalid ({e}), using default values.");
-                Self::default()
-            }),
-            Err(_) => Self::default(),
+        let Ok(text) = std::fs::read_to_string(path) else { return Self::default() };
+        serde_json::from_str(&text).unwrap_or_else(|e| {
+            log::warn!("The preferences file is invalid ({e}): the values that cannot be read are reset.");
+            let _ = std::fs::copy(path, path.with_extension("broken.json"));
+            Self::from_partial_json(&text)
+        })
+    }
+
+    /// Keep each value of the file that can be read, and the default value for the others (a value written by a
+    /// later version, a typo in a file edited by hand...).
+    fn from_partial_json(text: &str) -> Self {
+        let mut prefs = Self::default();
+        let Ok(serde_json::Value::Object(file)) = serde_json::from_str(text) else { return prefs };
+        for (key, value) in file {
+            let Ok(serde_json::Value::Object(mut fields)) = serde_json::to_value(&prefs) else { break };
+            fields.insert(key, value);
+            if let Ok(p) = serde_json::from_value(serde_json::Value::Object(fields)) {
+                prefs = p;
+            }
         }
+        prefs
     }
 
     pub fn save(&self, path: &Path) -> anyhow::Result<()> {
@@ -172,6 +186,18 @@ mod tests {
         // the value written by 0.1.0
         let p: Preferences = serde_json::from_str(r#"{"language": "Auto"}"#).unwrap();
         assert_eq!(p.language, Language::System);
+    }
+
+    #[test]
+    fn one_bad_value_does_not_reset_the_others() {
+        let p = Preferences::from_partial_json(
+            r#"{"language": "German", "comboListFolder": "D:\\Dropbox\\Combos", "enabled": false, "comboPickerShortcut": "Ctrl+Foo"}"#,
+        );
+        assert_eq!(p.language, Language::System);
+        assert_eq!(p.combo_picker_shortcut, Shortcut::default_picker());
+        assert_eq!(p.combo_list_folder, r"D:\Dropbox\Combos");
+        assert!(!p.enabled);
+        assert_eq!(Preferences::from_partial_json("not json"), Preferences::default());
     }
 
     #[test]

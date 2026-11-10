@@ -19,7 +19,8 @@ pub enum Dialog {
     Import(ImportDialog),
     RestoreBackup(RestoreBackupDialog),
     AppList(AppListEditor),
-    BeeftextMigration(PathBuf),
+    /// The path of the Beeftext list, and its number of combos and groups (None if it cannot be read).
+    BeeftextMigration(PathBuf, Option<(usize, usize)>),
     About,
     Help,
     EmojiList(super::emoji_list::EmojiListDialog),
@@ -205,7 +206,7 @@ impl ExpanderApp {
             Dialog::Import(d) => self.import_ui(ctx, d),
             Dialog::RestoreBackup(d) => self.restore_backup_ui(ctx, d),
             Dialog::AppList(d) => self.app_list_ui(ctx, d),
-            Dialog::BeeftextMigration(p) => self.migration_ui(ctx, p.clone()),
+            Dialog::BeeftextMigration(p, summary) => self.migration_ui(ctx, p.clone(), *summary),
             Dialog::About => about_ui(ctx, &self.shared),
             Dialog::Help => help_ui(ctx),
             Dialog::EmojiList(d) => self.emoji_list_ui(ctx, d),
@@ -389,19 +390,23 @@ impl ExpanderApp {
         let uuid = combo.uuid;
         {
             let mut lib = self.shared.library.write();
-            if ed.is_new {
-                let mut c = combo;
-                let n = library::now();
-                c.created = n;
-                c.modified = n;
-                lib.combos.push(c);
-            } else if let Some(existing) = lib.combo_mut(&uuid)
-                && *existing != combo
-            {
-                let mut c = combo;
-                c.touch();
-                c.last_use = existing.last_use;
-                *existing = c;
+            match lib.combo_mut(&uuid) {
+                Some(existing) if !ed.is_new => {
+                    if *existing != combo {
+                        let mut c = combo;
+                        c.touch();
+                        c.last_use = existing.last_use;
+                        *existing = c;
+                    }
+                }
+                // new, or deleted meanwhile by another computer sharing the combo list: added
+                _ => {
+                    let mut c = combo;
+                    let n = library::now();
+                    c.created = n;
+                    c.modified = n;
+                    lib.combos.push(c);
+                }
             }
         }
         self.selection = vec![uuid];
@@ -445,13 +450,15 @@ impl ExpanderApp {
         let uuid = g.uuid;
         {
             let mut lib = self.shared.library.write();
-            if ed.is_new {
-                lib.groups.push(g);
-            } else if let Some(existing) = lib.group_mut(&uuid)
-                && *existing != g
-            {
-                g.touch();
-                *existing = g;
+            match lib.group_mut(&uuid) {
+                Some(existing) if !ed.is_new => {
+                    if *existing != g {
+                        g.touch();
+                        *existing = g;
+                    }
+                }
+                // new, or deleted meanwhile by another computer sharing the combo list: added
+                _ => lib.groups.push(g),
             }
         }
         if ed.is_new {
@@ -521,11 +528,12 @@ impl ExpanderApp {
                 }
                 lib.ensure_correct_grouping(tr("app-default-group"));
                 let n = lib.combos.len();
-                *self.shared.library.write() = lib;
                 self.group_filter = super::GroupFilter::All;
                 self.selection.clear();
-                self.commit_library();
-                self.info(tr!("msg-combos-restored", count = n));
+                match self.shared.replace_library(lib) {
+                    Ok(()) => self.info(tr!("msg-combos-restored", count = n)),
+                    Err(e) => self.error(format!("{}\n{e:#}", tr("msg-library-save-failed"))),
+                }
             }
             Err(e) => self.error(format!("{}\n{e:#}", tr("msg-load-failed"))),
         }
@@ -668,10 +676,9 @@ impl ExpanderApp {
         false
     }
 
-    fn migration_ui(&mut self, ctx: &egui::Context, path: PathBuf) -> bool {
+    fn migration_ui(&mut self, ctx: &egui::Context, path: PathBuf, summary: Option<(usize, usize)>) -> bool {
         let mut ok = false;
         let mut cancel = false;
-        let summary = Library::load(&path).map(|p| (p.library.combos.len(), p.library.groups.len())).ok();
         let r = modal("migration").show(ctx, |ui| {
             ui.set_max_width(460.0);
             ui.heading(tr("migration-title"));

@@ -1,11 +1,10 @@
 //! The list of the emoji shortcodes, searchable by code, name or category. Clicking a row copies its code.
 
-use std::sync::OnceLock;
-
 use egui::{Align, Layout, RichText, Sense, Shape};
 
 use super::ExpanderApp;
 use super::style::{self, muted};
+use crate::emoji::EmojiEntry as Item;
 use crate::i18n::tr;
 
 #[derive(Default)]
@@ -14,24 +13,6 @@ pub struct EmojiListDialog {
     group: Option<emojis::Group>,
     copied: Option<String>,
     focused: bool,
-}
-
-struct Item {
-    emoji: &'static str,
-    codes: Vec<&'static str>,
-    name: &'static str,
-    group: emojis::Group,
-}
-
-/// Every emoji that has a shortcode, in the Unicode order.
-fn items() -> &'static [Item] {
-    static ITEMS: OnceLock<Vec<Item>> = OnceLock::new();
-    ITEMS.get_or_init(|| {
-        emojis::iter()
-            .filter(|e| e.shortcode().is_some())
-            .map(|e| Item { emoji: e.as_str(), codes: e.shortcodes().collect(), name: e.name(), group: e.group() })
-            .collect()
-    })
 }
 
 fn group_label(group: emojis::Group) -> &'static str {
@@ -72,7 +53,7 @@ impl ExpanderApp {
             (p.emoji_left_delimiter.clone(), p.emoji_right_delimiter.clone(), p.emoji_shortcodes_enabled)
         };
         let code = |c: &str| format!("{left}{c}{right}");
-        let found = filter(items(), &d.search, d.group, (&left, &right));
+        let found = filter(crate::emoji::all(), &d.search, d.group, (&left, &right));
         let mut close = false;
         let r = super::dialogs::modal("emoji_list").show(ctx, |ui| {
             ui.set_width(660.0);
@@ -177,7 +158,7 @@ mod tests {
 
     #[test]
     fn search_by_code_name_and_group() {
-        let all = items();
+        let all = crate::emoji::all();
         assert!(all.len() > 1500);
         let codes = |v: Vec<&Item>| v.iter().map(|i| i.codes[0]).collect::<Vec<_>>();
         // by code, with or without delimiters

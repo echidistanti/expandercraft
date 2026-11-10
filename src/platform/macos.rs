@@ -8,7 +8,6 @@
 //! * Paste is Cmd+V.
 
 use std::ffi::c_void;
-use std::sync::OnceLock;
 use std::sync::atomic::{AtomicBool, AtomicPtr, Ordering};
 use std::time::Duration;
 
@@ -416,10 +415,6 @@ pub fn is_own_process_foreground() -> bool {
 // Misc
 // ---------------------------------------------------------------------------------------------------------------------
 
-pub fn post_substitution_grace() -> Duration {
-    Duration::ZERO
-}
-
 pub fn powershell_exe() -> &'static str {
     "pwsh"
 }
@@ -478,11 +473,4 @@ pub fn platform_status() -> PlatformStatus {
     let trusted = unsafe { AXIsProcessTrusted() };
     let ok = INPUT_OK.load(Ordering::SeqCst) && trusted;
     PlatformStatus { input_ok: ok, message: (!ok).then(|| crate::i18n::tr("platform-macos-permissions").to_string()) }
-}
-
-#[allow(dead_code)]
-fn _assert_send() {
-    fn is_send<T: Send>() {}
-    is_send::<MacKeyboard>();
-    let _ = OnceLock::<()>::new();
 }
