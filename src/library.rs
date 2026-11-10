@@ -457,6 +457,20 @@ impl Library {
 
     /// Make sure there is at least one group and that every combo belongs to an existing group.
     /// Returns true if the library was modified.
+    /// Groups still called by the default name of another language ("Default Group" created before the
+    /// language was changed) take the default name of the current language.
+    pub fn localize_default_group_names(&mut self, default_names: &[String], current: &str) -> bool {
+        let mut modified = false;
+        for g in &mut self.groups {
+            if g.name != current && default_names.contains(&g.name) {
+                g.name = current.to_string();
+                g.modified = now();
+                modified = true;
+            }
+        }
+        modified
+    }
+
     pub fn ensure_correct_grouping(&mut self, default_group_name: &str) -> bool {
         let mut modified = false;
         if self.groups.is_empty() {
@@ -765,6 +779,18 @@ mod tests {
              "uuid": "{2f0b6d36-2a1d-4c5f-9f3a-7a4b2c3d4e5f}"}
         ]
     }"#;
+
+    #[test]
+    fn default_group_follows_the_language() {
+        let mut lib = Library::from_json_str(BEEFTEXT_V10).unwrap().library;
+        lib.groups.push(Group::new("Work", ""));
+        let defaults: Vec<String> = ["Default Group", "Gruppo predefinito", "Groupe par défaut"].map(String::from).into();
+        assert!(lib.localize_default_group_names(&defaults, "Gruppo predefinito"));
+        assert_eq!(lib.groups[0].name, "Gruppo predefinito");
+        // groups the user named are left alone, and nothing changes the second time
+        assert_eq!(lib.groups[1].name, "Work");
+        assert!(!lib.localize_default_group_names(&defaults, "Gruppo predefinito"));
+    }
 
     #[test]
     fn parse_beeftext_v10() {

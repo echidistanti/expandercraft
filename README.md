@@ -17,7 +17,7 @@ Equivalenti a Beeftext 15:
 - **Selettore delle combo** (picker): finestra di ricerca aperta con una scorciatoia globale (predefinita `Ctrl+Alt+Shift+Invio`), ordinata per ultimo uso.
 - **Sostituzione automatica**, oppure **manuale** con scorciatoia (`Ctrl+Alt+Shift+B`), con eventuale attivazione tramite **spazio** dopo la parola chiave.
 - **Scorciatoia per attivare/disattivare** l'applicazione (`Ctrl+Alt+Shift+V`, disattivata di default).
-- **Emoji** con codici brevi tra delimitatori (`|smile|` → 😄), anche nel picker. I codici sono quelli di GitHub (gemoji). L'elenco completo è dentro il programma (*Aiuto → Elenco delle emoji*, oppure Preferenze › Emoji): si cerca per codice, nome inglese o categoria, e un clic copia il codice.
+- **Emoji** con gli shortcode tra delimitatori (`|smile|` → 😄), anche nel picker. Gli shortcode sono quelli di GitHub (gemoji). L'elenco completo è dentro il programma (*Aiuto → Elenco delle emoji*, oppure Preferenze › Emoji): si cerca per shortcode, nome inglese o categoria, e un clic copia lo shortcode.
 - **Applicazioni escluse** (nessuna sostituzione), **applicazioni sensibili** (testo digitato carattere per carattere al posto dell'incolla), esclusioni specifiche per le emoji. Sono ammessi i caratteri jolly `*` e `?`.
 - **Appunti**: il testo viene incollato tramite gli appunti, poi il contenuto precedente viene ripristinato (su Windows tutti i formati, immagini e file compresi).
 - **Import/export** JSON (formato Beeftext) e CSV (formato TextExpander), con gestione dei conflitti: salta, sovrascrivi, sovrascrivi solo i più vecchi.
@@ -128,7 +128,7 @@ Per aggiungere una piattaforma (Linux è la prossima) basta un modulo in `platfo
 
 ## Traduzioni
 
-I testi dell'interfaccia stanno in `locales/*.ftl`, nel formato [Fluent](https://projectfluent.org), e vengono inclusi nell'eseguibile. L'inglese (`en.ftl`) è il riferimento: un messaggio che manca in un'altra lingua viene mostrato in inglese. Nelle preferenze, alla voce Aspetto, si sceglie tra le quattro lingue o "Lingua del sistema", che usa la lingua del sistema operativo se è tradotta e l'inglese altrimenti.
+I testi dell'interfaccia stanno in `locales/*.ftl`, nel formato [Fluent](https://projectfluent.org), e vengono inclusi nell'eseguibile. L'inglese (`en.ftl`) è il riferimento: un messaggio che manca in un'altra lingua viene mostrato in inglese. Di default ExpanderCraft usa la lingua del sistema operativo, se è tra quelle tradotte, e l'inglese altrimenti. Nelle preferenze, alla voce Aspetto, si può scegliere una lingua precisa. Il gruppo creato al primo avvio, finché conserva il nome predefinito, prende il nome nella lingua scelta.
 
 Nel codice un messaggio semplice si scrive `tr("menu-quit")`, uno con parametri `tr!("msg-combos-imported", count = n)`. I plurali seguono le regole CLDR di ogni lingua (in francese 0 e 1 sono singolari):
 
@@ -188,4 +188,4 @@ Le modifiche di ogni versione sono in [CHANGELOG.md](CHANGELOG.md).
 
 ## Licenza
 
-MIT. ExpanderCraft si ispira a Beeftext di Xavier Michelon (MIT) e ne riprende il formato dei file. I codici brevi delle emoji provengono da gemoji (MIT) tramite il crate `emojis`.
+MIT. ExpanderCraft si ispira a Beeftext di Xavier Michelon (MIT) e ne riprende il formato dei file. Gli shortcode delle emoji provengono da gemoji (MIT) tramite il crate `emojis`.

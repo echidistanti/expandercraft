@@ -297,6 +297,7 @@ impl eframe::App for ExpanderApp {
         if self.applied_language != crate::i18n::generation() {
             self.applied_language = crate::i18n::generation();
             self.platform_status = crate::platform::platform_status();
+            self.shared.localize_default_group_names();
         }
 
         let popups_open = {

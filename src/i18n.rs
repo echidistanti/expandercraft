@@ -188,6 +188,11 @@ pub fn tr(id: &'static str) -> &'static str {
     s
 }
 
+/// A message without arguments in every language, to recognize a text written by an earlier language.
+pub fn translations(id: &str) -> Vec<String> {
+    Lang::ALL.into_iter().filter_map(|l| catalog(l).format(id, None)).collect()
+}
+
 /// Translate a message with arguments. Prefer the `tr!` macro.
 pub fn tr_args(id: &str, args: &FluentArgs) -> String {
     let lang = current();
@@ -345,6 +350,12 @@ mod tests {
         let s = tr_in(Lang::Fr, "confirm-delete-group", Some(&a)).unwrap();
         assert_eq!(s, "Supprimer le groupe «\u{a0}Work\u{a0}»\u{a0}?");
         assert!(!s.contains('\u{2068}'));
+    }
+
+    #[test]
+    fn translations_in_every_language() {
+        let names = translations("app-default-group");
+        assert_eq!(names, ["Default Group", "Gruppo predefinito", "Groupe par défaut", "Grupo predeterminado"]);
     }
 
     #[test]
