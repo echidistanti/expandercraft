@@ -19,6 +19,9 @@ use crate::variables::{DateKind, EvalState, VariableHost, evaluate_snippet};
 
 /// Delay between two fragments of a snippet, as in Beeftext.
 const DELAY_BETWEEN_FRAGMENTS_MS: u64 = 100;
+/// How long a substitution waits for the user to release the modifier keys.
+const MODIFIER_RELEASE_TIMEOUT: Duration = Duration::from_millis(1000);
+
 /// The clipboard is restored this long after pasting a snippet.
 const CLIPBOARD_RESTORE_DELAY: Duration = Duration::from_millis(1000);
 /// Maximum length of the typed text buffer.
@@ -232,6 +235,8 @@ pub struct Engine {
     clipboard: ClipboardKeeper,
     picker_return: Option<WindowToken>,
     locale: chrono::Locale,
+    /// True while handling a space that the input monitor swallowed.
+    space_swallowed: bool,
 }
 
 impl Engine {
@@ -244,6 +249,7 @@ impl Engine {
             clipboard: ClipboardKeeper::new(clipboard),
             picker_return: None,
             locale: crate::qtdate::system_locale(),
+            space_swallowed: false,
         }
     }
 
@@ -310,6 +316,16 @@ impl Engine {
             }
             InputEvent::Breaker => self.buffer.clear(),
             InputEvent::Shortcut(sc) => self.on_shortcut(sc),
+            InputEvent::SwallowedSpace => {
+                // the application did not get this space: there is one character less to erase, and if the
+                // combo cannot be performed after all, the space is typed so that it is not lost
+                self.buffer.push(' ');
+                self.space_swallowed = true;
+                if !self.check_and_substitute() {
+                    self.keyboard.type_text(" ", 0);
+                }
+                self.space_swallowed = false;
+            }
         }
     }
 
@@ -348,35 +364,49 @@ impl Engine {
         }
     }
 
-    fn check_and_substitute(&mut self) {
+    /// Returns true if a combo or an emoji was substituted.
+    fn check_and_substitute(&mut self) -> bool {
         let prefs = self.shared.prefs.read().clone();
         let on_space = prefs.triggers_on_space();
         let mut text = self.buffer.clone();
         if on_space {
             if !text.ends_with(char::is_whitespace) {
-                return;
+                return false;
             }
             text.pop();
         }
         let candidates: Vec<Combo> = {
             let lib = self.shared.library.read();
-            lib.combos.iter().filter(|c| lib.is_usable(c) && c.matches_input(&text, &prefs)).cloned().collect()
+            let matching: Vec<&Combo> = lib.combos.iter().filter(|c| lib.is_usable(c) && c.matches_input(&text, &prefs)).collect();
+            // with loose matching "@@@" also matches the keyword "@@": the longest keyword wins, and combos sharing
+            // that keyword are picked at random
+            let longest = matching.iter().map(|c| c.keyword_len()).max().unwrap_or(0);
+            matching.into_iter().filter(|c| c.keyword_len() == longest).cloned().collect()
         };
         if candidates.is_empty() {
-            if !self.try_emoji(&text, &prefs) && on_space {
+            let emoji = self.try_emoji(&text, &prefs);
+            if !emoji && on_space {
                 self.buffer.clear();
             }
-            return;
+            return emoji;
         }
         self.buffer.clear();
         if platform::is_own_process_foreground() {
-            return; // no substitution in ExpanderCraft's own windows
+            return false; // no substitution in ExpanderCraft's own windows
         }
         let combo = candidates[random_index(candidates.len())].clone();
         if self.perform_combo(&combo, false, &prefs) {
             self.after_substitution(&prefs);
             self.shared.mark_combo_used(&combo.uuid);
+            return true;
         }
+        false
+    }
+
+    /// Characters typed after the keyword that must be erased with it: the space that triggered the combo,
+    /// unless the input monitor swallowed it.
+    fn trigger_chars(&self, prefs: &Preferences) -> usize {
+        usize::from(prefs.triggers_on_space() && !self.space_swallowed)
     }
 
     fn try_emoji(&mut self, text: &str, prefs: &Preferences) -> bool {
@@ -397,10 +427,7 @@ impl Engine {
         {
             return true;
         }
-        let erase = l.graphemes(true).count()
-            + shortcode.graphemes(true).count()
-            + r.graphemes(true).count()
-            + usize::from(prefs.triggers_on_space());
+        let erase = l.graphemes(true).count() + shortcode.graphemes(true).count() + r.graphemes(true).count() + self.trigger_chars(prefs);
         self.render(emoji, erase, false, prefs);
         self.after_substitution(prefs);
         self.shared.mark_emoji_used(shortcode);
@@ -466,7 +493,7 @@ impl Engine {
             // slow applications (Electron & co) need some time to properly regain focus
             sleep_ms(300);
         }
-        let erase = if from_picker { 0 } else { combo.keyword_len() + usize::from(prefs.triggers_on_space()) };
+        let erase = if from_picker { 0 } else { combo.keyword_len() + self.trigger_chars(prefs) };
         self.render(&text, erase, from_picker, prefs);
         true
     }
@@ -485,6 +512,13 @@ impl Engine {
         let cursor = cursor.map(|c| c + usize::from(final_space));
 
         self.shared.begin_substitution();
+        // A keyword can end with a character typed with a modifier (@ is AltGr+ò on an Italian keyboard). Sending
+        // keys while the user holds it mixes the two: the application can see a lone Alt press, which activates
+        // the menu or the keytips of Windows 11 apps such as Notepad, and the paste shortcut gets lost.
+        let wait_start = Instant::now();
+        while self.keyboard.modifiers_held() && wait_start.elapsed() < MODIFIER_RELEASE_TIMEOUT {
+            sleep_ms(10);
+        }
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             if erase > 0 {
                 self.keyboard.erase(erase);
@@ -656,6 +690,48 @@ mod tests {
         assert!(log.lock().is_empty());
         type_str(&mut e, " ");
         assert_eq!(*log.lock(), vec!["erase(3)", "clip(hello )", "paste"]);
+    }
+
+    #[test]
+    fn swallowed_trigger_space() {
+        let prefs = Preferences { combo_triggers_on_space: true, ..Default::default() };
+        let (mut e, log) = engine_with(&[("kw", "hello")], prefs);
+        // the input thread decides to swallow the space: it saw "kw" typed
+        let shared = e.shared.clone();
+        use crate::platform::InputSink as _;
+        for c in "kw".chars() {
+            shared.on_event(InputEvent::Char(c));
+            e.on_input(InputEvent::Char(c));
+        }
+        assert!(shared.space_completes_combo());
+        e.on_input(InputEvent::SwallowedSpace);
+        // the space never reached the application: only the keyword is erased
+        assert_eq!(*log.lock(), vec!["erase(2)", "clip(hello)", "paste"]);
+        // after the substitution, a new space does not complete anything
+        shared.on_event(InputEvent::SwallowedSpace);
+        assert!(!shared.space_completes_combo());
+    }
+
+    #[test]
+    fn longest_keyword_wins_with_loose_matching() {
+        let prefs = Preferences {
+            combo_triggers_on_space: true,
+            default_matching_mode: crate::library::MatchingMode::Loose,
+            ..Default::default()
+        };
+        let (mut e, log) = engine_with(&[("@@", "short"), ("@@@", "long")], prefs);
+        type_str(&mut e, "@@@ ");
+        assert_eq!(*log.lock(), vec!["erase(4)", "clip(long)", "paste"]);
+    }
+
+    #[test]
+    fn swallowed_space_is_typed_back_when_nothing_matches() {
+        let prefs = Preferences { combo_triggers_on_space: true, ..Default::default() };
+        let (mut e, log) = engine_with(&[("kw", "hello")], prefs);
+        // the engine's buffer differs from the input thread's (it was reset in between)
+        type_str(&mut e, "k");
+        e.on_input(InputEvent::SwallowedSpace);
+        assert_eq!(*log.lock(), vec!["type( )"]);
     }
 
     #[test]
