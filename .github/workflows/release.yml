@@ -1,0 +1,64 @@
+name: release
+
+# Builds the Windows package and attaches it to a GitHub release.
+#
+# To publish a version: set it in Cargo.toml, describe it in CHANGELOG.md, push, then on GitHub open
+# Releases → Draft a new release, create the tag vX.Y.Z on main and publish. This workflow checks that the
+# tag matches Cargo.toml, runs the tests, attaches ExpanderCraft-X.Y.Z-windows-x64.zip and, if the release
+# has no description, fills it with the section of CHANGELOG.md for that version.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag of an existing release to build and attach the package to (for instance v0.2.0)
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    env:
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Check that the tag matches the version in Cargo.toml
+        shell: bash
+        run: |
+          version=$(grep -m1 '^version = ' Cargo.toml | cut -d'"' -f2)
+          if [ "$TAG" != "v$version" ]; then
+            echo "::error::the tag $TAG does not match the version $version of Cargo.toml"
+            exit 1
+          fi
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+
+      - run: cargo test
+      - run: cargo build --release
+
+      - name: Package
+        shell: pwsh
+        run: |
+          $dir = "ExpanderCraft-$env:VERSION"
+          New-Item -ItemType Directory $dir | Out-Null
+          Copy-Item target/release/expandercraft.exe, README.md, CHANGELOG.md, LICENSE $dir
+          Compress-Archive -Path $dir -DestinationPath "$dir-windows-x64.zip"
+
+      - name: Attach the package to the release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "$TAG" "ExpanderCraft-$VERSION-windows-x64.zip" --clobber
+          # an empty description gets the notes of this version from CHANGELOG.md
+          if [ -z "$(gh release view "$TAG" --json body -q .body)" ]; then
+            awk -v v="$VERSION" '/^## / { found = index($0, "## " v " ") == 1 || $0 == "## " v; next } found' CHANGELOG.md > notes.md
+            if [ -s notes.md ]; then gh release edit "$TAG" --notes-file notes.md; fi
+          fi
