@@ -174,6 +174,14 @@ CARGO_TARGET_X86_64_PC_WINDOWS_GNU_RUNNER=wine cargo test --target x86_64-pc-win
 
 52 test unitari coprono le traduzioni, la tabella riassuntiva in PDF (a capo, cambi pagina, caratteri), la ricerca delle emoji, il formato dei file, le variabili, i formati di data, i frammenti, il cursore, le corrispondenze e il motore di sostituzione (con tastiera e appunti simulati).
 
+## Pubblicare una versione
+
+1. aggiorna `version` in `Cargo.toml` e aggiungi la sezione della versione in `CHANGELOG.md` (`## 0.3.0 — data`);
+2. fai commit e push su `main`;
+3. su GitHub apri *Releases → Draft a new release*, scrivi il tag `v0.3.0` (viene creato su `main`) e pubblica.
+
+Il workflow `release` controlla che il tag corrisponda alla versione di `Cargo.toml`, esegue i test, compila e allega alla release `ExpanderCraft-0.3.0-windows-x64.zip`. Se la descrizione della release è vuota, la riempie con le note della versione prese da `CHANGELOG.md`. Per rifare il pacchetto di una release già pubblicata: *Actions → release → Run workflow*, indicando il tag.
+
 ## Novità
 
 Le modifiche di ogni versione sono in [CHANGELOG.md](CHANGELOG.md).
