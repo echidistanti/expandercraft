@@ -19,8 +19,8 @@ pub enum Theme {
 pub enum Language {
     /// Follow the system language (English if it is not translated).
     #[serde(alias = "Auto")]
-    System,
     #[default]
+    System,
     English,
     Italian,
     French,
@@ -103,7 +103,7 @@ impl Default for Preferences {
             enable_app_toggle_shortcut: false,
             app_toggle_shortcut: Shortcut::default_app_toggle(),
             theme: Theme::System,
-            language: Language::English,
+            language: Language::System,
             default_matching_mode: MatchingMode::Strict,
             default_case_sensitivity: CaseSensitivity::CaseSensitive,
             warn_about_short_keyword: true,
@@ -163,6 +163,16 @@ impl Preferences {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn system_language_by_default() {
+        assert_eq!(Preferences::default().language, Language::System);
+        let p: Preferences = serde_json::from_str(r#"{"language": "Italian"}"#).unwrap();
+        assert_eq!(p.language, Language::Italian);
+        // the value written by 0.1.0
+        let p: Preferences = serde_json::from_str(r#"{"language": "Auto"}"#).unwrap();
+        assert_eq!(p.language, Language::System);
+    }
 
     #[test]
     fn partial_json_uses_defaults() {

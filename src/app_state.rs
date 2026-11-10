@@ -194,9 +194,19 @@ impl AppShared {
             lib.apply_last_use_json(&text);
         }
         needs_save |= lib.ensure_correct_grouping(tr("app-default-group"));
+        needs_save |= lib.localize_default_group_names(&crate::i18n::translations("app-default-group"), tr("app-default-group"));
         *self.library.write() = lib;
         if needs_save && let Err(e) = self.save_library() {
             log::warn!("Could not save the combo list after loading it: {e:#}");
+        }
+    }
+
+    /// After a change of language, rename the groups that still have the default name of the previous one.
+    pub fn localize_default_group_names(&self) {
+        let renamed =
+            self.library.write().localize_default_group_names(&crate::i18n::translations("app-default-group"), tr("app-default-group"));
+        if renamed && let Err(e) = self.save_library() {
+            log::warn!("Could not save the combo list after renaming the default group: {e:#}");
         }
     }
 

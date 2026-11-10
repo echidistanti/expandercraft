@@ -215,7 +215,7 @@ applist-excluded-help = ExpanderCraft non sostituisce nulla in queste applicazio
 applist-sensitive-title = Applicazioni sensibili
 applist-sensitive-help = Queste applicazioni non permettono di incollare da tastiera: il testo viene digitato carattere per carattere.
 applist-emoji-title = Applicazioni escluse dalla sostituzione delle emoji
-applist-emoji-help = In queste applicazioni i codici delle emoji non vengono sostituiti.
+applist-emoji-help = In queste applicazioni gli shortcode delle emoji non vengono sostituiti.
 applist-format = Un nome di processo per riga (per esempio notepad.exe). Sono ammessi i caratteri jolly * e ?.
 applist-example = Esempio di nome di processo: { $name }
 
@@ -229,7 +229,7 @@ migration-text = Su questo computer c'è una lista di combo di Beeftext. Expande
 about-version = Versione { $version }
 about-tagline = Un espansore di testo scritto in Rust. Digiti una parola chiave, ottieni un testo.
 about-credits-beeftext = Ispirato a Beeftext di Xavier Michelon (licenza MIT). I file delle combo sono compatibili con Beeftext.
-about-credits-emoji = Codici delle emoji da gemoji (licenza MIT).
+about-credits-emoji = Shortcode delle emoji da gemoji (licenza MIT).
 about-data-folder = Cartella dei dati: { $path }
 
 ## Variables reference
@@ -293,8 +293,8 @@ prefs-sync-folder-hint = Con una cartella sincronizzata (OneDrive, Dropbox...) p
 msg-combo-list-moved =
     Ora la lista delle combo viene salvata in:
     { $path }
-prefs-section-emoji = Codici delle emoji
-prefs-emoji-enable = Sostituisci i codici delle emoji
+prefs-section-emoji = Shortcode delle emoji
+prefs-emoji-enable = Usa gli shortcode delle emoji
 prefs-left-delimiter = Delimitatore sinistro
 prefs-right-delimiter = Delimitatore destro
 prefs-example = Esempio:
@@ -368,13 +368,13 @@ key-print = Stamp
 ## Emoji list
 
 menu-emoji-list = Elenco delle emoji
-emoji-list-title = Codici delle emoji
-emoji-list-intro = Digita il codice tra i delimitatori, per esempio { $example }. I nomi sono in inglese.
+emoji-list-title = Shortcode delle emoji
+emoji-list-intro = Scrivi lo shortcode tra i delimitatori, per esempio { $example }. I nomi sono in inglese.
 emoji-list-disabled = La sostituzione delle emoji è disattivata: attivala in Preferenze › Emoji.
-emoji-list-search = Cerca per codice o nome...
+emoji-list-search = Cerca per shortcode o nome...
 emoji-list-count = { $count } emoji
 emoji-list-no-match = Nessuna emoji corrisponde alla ricerca.
-emoji-list-click-hint = Clicca una riga per copiarne il codice.
+emoji-list-click-hint = Clicca una riga per copiarne lo shortcode.
 emoji-list-copied = Copiato: { $code }
 emoji-group-all = Tutte le categorie
 emoji-group-smileys = Faccine ed emozioni

@@ -298,7 +298,7 @@ msg-combo-list-moved =
     The combo list is now saved in:
     { $path }
 prefs-section-emoji = Emoji shortcodes
-prefs-emoji-enable = Replace emoji shortcodes
+prefs-emoji-enable = Use emoji shortcodes
 prefs-left-delimiter = Left delimiter
 prefs-right-delimiter = Right delimiter
 prefs-example = Example:
