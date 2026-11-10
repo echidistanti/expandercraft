@@ -22,6 +22,7 @@ pub enum Dialog {
     BeeftextMigration(PathBuf),
     About,
     Help,
+    EmojiList(super::emoji_list::EmojiListDialog),
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -188,7 +189,7 @@ fn buttons_row(ui: &mut egui::Ui, ok_label: &str, ok_enabled: bool) -> (bool, bo
     (ok, cancel)
 }
 
-fn modal(id: &str) -> egui::Modal {
+pub(super) fn modal(id: &str) -> egui::Modal {
     egui::Modal::new(Id::unique(id))
 }
 
@@ -207,6 +208,7 @@ impl ExpanderApp {
             Dialog::BeeftextMigration(p) => self.migration_ui(ctx, p.clone()),
             Dialog::About => about_ui(ctx, &self.shared),
             Dialog::Help => help_ui(ctx),
+            Dialog::EmojiList(d) => self.emoji_list_ui(ctx, d),
         };
         if keep && self.dialog.is_none() {
             self.dialog = Some(dialog);
