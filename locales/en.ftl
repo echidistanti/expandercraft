@@ -49,8 +49,8 @@ menu-delete-group = Delete group...
 menu-backup = Back up combo list...
 menu-restore = Restore combo list...
 menu-restore-auto = Restore an automatic backup...
-menu-cheat-sheet = Generate cheat sheet (CSV)...
-menu-cheat-sheet-hint = Creates a CSV file listing the group, name, keyword and snippet of every combo, to print or open in a spreadsheet as a reminder of your keywords.
+menu-cheat-sheet = Generate cheat sheet (PDF or CSV)...
+menu-cheat-sheet-hint = Lists the name, keyword and snippet of every combo, group by group: a PDF ready to print, or a CSV file to open in a spreadsheet.
 menu-open-data-folder = Open data folder
 menu-open-log = Open log file
 menu-variables-reference = Variables reference
@@ -123,6 +123,9 @@ msg-exported = The combos were exported.
 msg-export-failed = The combos could not be exported.
 msg-backup-saved = The backup was saved.
 msg-cheat-sheet-done = The cheat sheet was generated.
+cheat-sheet-page = Page { $page } of { $total }
+cheat-sheet-disabled-note = Disabled combos and groups are shown in grey.
+cheat-sheet-title = ExpanderCraft cheat sheet
 msg-load-failed = The file could not be loaded.
 msg-combos-restored =
     { $count ->
@@ -299,8 +302,7 @@ prefs-emoji-enable = Replace emoji shortcodes
 prefs-left-delimiter = Left delimiter
 prefs-right-delimiter = Right delimiter
 prefs-example = Example:
-prefs-emoji-list = Full list of emoji shortcodes
-prefs-emoji-list-hint = The list of GitHub shortcodes, which ExpanderCraft uses. The “GitHub Custom Emoji” section and the newest emojis may not work.
+prefs-emoji-list = Emoji list...
 prefs-excluded-apps = Excluded applications...
 prefs-sensitive-apps = Sensitive applications...
 prefs-show-emojis-in-picker = Show emojis in the combo picker (after 3 characters)
@@ -366,3 +368,29 @@ key-right = Right
 key-up = Up
 key-down = Down
 key-print = Print
+
+## Emoji list
+
+menu-emoji-list = Emoji list
+emoji-list-title = Emoji shortcodes
+emoji-list-intro = Type the code between the delimiters, for instance { $example }. Names are in English.
+emoji-list-disabled = Emoji substitution is disabled: enable it in Preferences › Emojis.
+emoji-list-search = Search by code or name...
+emoji-list-count =
+    { $count ->
+        [one] { $count } emoji
+       *[other] { $count } emojis
+    }
+emoji-list-no-match = No emoji matches the search.
+emoji-list-click-hint = Click a row to copy its code.
+emoji-list-copied = Copied: { $code }
+emoji-group-all = All categories
+emoji-group-smileys = Smileys & emotion
+emoji-group-people = People & body
+emoji-group-animals = Animals & nature
+emoji-group-food = Food & drink
+emoji-group-travel = Travel & places
+emoji-group-activities = Activities
+emoji-group-objects = Objects
+emoji-group-symbols = Symbols
+emoji-group-flags = Flags

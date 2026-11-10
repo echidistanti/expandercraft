@@ -570,6 +570,31 @@ impl Library {
     }
 
     /// The cheat sheet is a CSV file (Group, Name, Keyword, Snippet), sorted by group then name.
+    /// The groups in their order, each with its combos sorted by name, for the printable cheat sheet.
+    pub fn cheat_sheet_sections(&self) -> Vec<crate::cheat_sheet::Section> {
+        use crate::cheat_sheet::{Entry, Section};
+        let entry = |c: &Combo| Entry { name: c.name.clone(), keyword: c.keyword.clone(), snippet: c.snippet.clone(), enabled: c.enabled };
+        let sorted = |mut v: Vec<&Combo>| {
+            v.sort_by_key(|c| c.name.to_lowercase());
+            v.into_iter().map(entry).collect::<Vec<_>>()
+        };
+        let mut sections: Vec<Section> = self
+            .groups
+            .iter()
+            .map(|g| Section {
+                name: g.name.clone(),
+                enabled: g.enabled,
+                combos: sorted(self.combos.iter().filter(|c| c.group == Some(g.uuid)).collect()),
+            })
+            .collect();
+        // combos whose group does not exist any more
+        let orphans: Vec<&Combo> = self.combos.iter().filter(|c| c.group.as_ref().is_none_or(|u| self.group(u).is_none())).collect();
+        if !orphans.is_empty() {
+            sections.push(Section { name: "—".into(), enabled: true, combos: sorted(orphans) });
+        }
+        sections
+    }
+
     pub fn export_cheat_sheet(&self, path: &Path, headers: [&str; 4]) -> Result<()> {
         let mut rows: Vec<[String; 4]> =
             self.combos.iter().map(|c| [self.group_name(&c.group), c.name.clone(), c.keyword.clone(), c.snippet.clone()]).collect();

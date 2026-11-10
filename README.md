@@ -17,12 +17,12 @@ Equivalenti a Beeftext 15:
 - **Selettore delle combo** (picker): finestra di ricerca aperta con una scorciatoia globale (predefinita `Ctrl+Alt+Shift+Invio`), ordinata per ultimo uso.
 - **Sostituzione automatica**, oppure **manuale** con scorciatoia (`Ctrl+Alt+Shift+B`), con eventuale attivazione tramite **spazio** dopo la parola chiave.
 - **Scorciatoia per attivare/disattivare** l'applicazione (`Ctrl+Alt+Shift+V`, disattivata di default).
-- **Emoji** con codici brevi tra delimitatori (`|smile|` → 😄), anche nel picker. I codici sono quelli di GitHub: l'[elenco completo](https://github.com/ikatyang/emoji-cheat-sheet) è raggiungibile anche da Preferenze › Emoji.
+- **Emoji** con codici brevi tra delimitatori (`|smile|` → 😄), anche nel picker. I codici sono quelli di GitHub (gemoji). L'elenco completo è dentro il programma (*Aiuto → Elenco delle emoji*, oppure Preferenze › Emoji): si cerca per codice, nome inglese o categoria, e un clic copia il codice.
 - **Applicazioni escluse** (nessuna sostituzione), **applicazioni sensibili** (testo digitato carattere per carattere al posto dell'incolla), esclusioni specifiche per le emoji. Sono ammessi i caratteri jolly `*` e `?`.
 - **Appunti**: il testo viene incollato tramite gli appunti, poi il contenuto precedente viene ripristinato (su Windows tutti i formati, immagini e file compresi).
 - **Import/export** JSON (formato Beeftext) e CSV (formato TextExpander), con gestione dei conflitti: salta, sovrascrivi, sovrascrivi solo i più vecchi.
 - **Backup automatico** a ogni salvataggio (ultimi 50), ripristino da backup, backup e ripristino manuali.
-- **Tabella riassuntiva** (il *cheat sheet* di Beeftext): un file CSV con gruppo, nome, parola chiave e testo di ogni combo, da stampare o aprire in un foglio di calcolo per ricordare le parole chiave.
+- **Tabella riassuntiva** (il *cheat sheet* di Beeftext): nome, parola chiave e testo di ogni combo, gruppo per gruppo. In PDF (A4, pronto da stampare, con i caratteri inclusi nel file e le combo disattivate in grigio) oppure in CSV da aprire in un foglio di calcolo.
 - **Cartella della lista personalizzabile**, per esempio una cartella OneDrive o Dropbox per condividere le combo tra computer.
 - **Edizione portatile**: con un file `Portable.bin` accanto all'eseguibile, tutti i dati vanno nella sottocartella `Data`.
 - **Avvio all'accesso**, icona nell'area di notifica, istanza singola (un secondo avvio mostra la finestra già aperta).
@@ -111,13 +111,14 @@ src/
 ├── engine.rs          thread del motore: buffer digitato, corrispondenze, emoji, rendering
 ├── app_state.rs       stato condiviso (RwLock) tra hook, motore e interfaccia
 ├── i18n.rs            traduzioni Fluent: tr("id"), tr!("id", nome = valore), plurali CLDR
+├── cheat_sheet.rs     tabella riassuntiva in PDF (pdf-writer, caratteri di egui ridotti con subsetter)
 ├── prefs.rs  shortcut.rs  process_list.rs  backup.rs  emoji.rs  sound.rs  paths.rs  logger.rs  icon.rs
 ├── platform/
 │   ├── mod.rs         trait Keyboard, Clipboard, InputSink e tipi comuni
 │   ├── windows.rs     backend Windows
 │   ├── macos.rs       backend macOS
 │   └── unix_common.rs parti del backend macOS su crate portabili (arboard, socket Unix), riusabili per Linux
-└── ui/                interfaccia egui/eframe: finestra principale, dialoghi, preferenze, picker, tray
+└── ui/                interfaccia egui/eframe: finestra principale, dialoghi, preferenze, picker, elenco delle emoji, tray
 locales/               en.ftl (riferimento), it.ftl, fr.ftl, es.ftl
 ```
 
@@ -171,7 +172,11 @@ Su Linux, dove il programma non compila, i test si eseguono sulla versione Windo
 CARGO_TARGET_X86_64_PC_WINDOWS_GNU_RUNNER=wine cargo test --target x86_64-pc-windows-gnu
 ```
 
-47 test unitari coprono le traduzioni, il formato dei file, le variabili, i formati di data, i frammenti, il cursore, le corrispondenze e il motore di sostituzione (con tastiera e appunti simulati).
+52 test unitari coprono le traduzioni, la tabella riassuntiva in PDF (a capo, cambi pagina, caratteri), la ricerca delle emoji, il formato dei file, le variabili, i formati di data, i frammenti, il cursore, le corrispondenze e il motore di sostituzione (con tastiera e appunti simulati).
+
+## Novità
+
+Le modifiche di ogni versione sono in [CHANGELOG.md](CHANGELOG.md).
 
 ## Licenza
 

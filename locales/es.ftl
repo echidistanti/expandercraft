@@ -48,8 +48,8 @@ menu-delete-group = Eliminar el grupo...
 menu-backup = Hacer una copia de seguridad de la lista...
 menu-restore = Restaurar la lista de combos...
 menu-restore-auto = Restaurar una copia de seguridad automática...
-menu-cheat-sheet = Generar una chuleta (CSV)...
-menu-cheat-sheet-hint = Crea un archivo CSV con el grupo, el nombre, la palabra clave y el fragmento de cada combo, para imprimirlo o abrirlo en una hoja de cálculo y recordar las palabras clave.
+menu-cheat-sheet = Generar una chuleta (PDF o CSV)...
+menu-cheat-sheet-hint = Muestra el nombre, la palabra clave y el fragmento de cada combo, grupo por grupo: un PDF listo para imprimir o un archivo CSV para abrir en una hoja de cálculo.
 menu-open-data-folder = Abrir la carpeta de datos
 menu-open-log = Abrir el archivo de registro
 menu-variables-reference = Referencia de variables
@@ -122,6 +122,9 @@ msg-exported = Se han exportado los combos.
 msg-export-failed = No se han podido exportar los combos.
 msg-backup-saved = Se ha guardado la copia de seguridad.
 msg-cheat-sheet-done = Se ha generado la chuleta.
+cheat-sheet-page = Página { $page } de { $total }
+cheat-sheet-disabled-note = Los combos y grupos desactivados aparecen en gris.
+cheat-sheet-title = Chuleta de ExpanderCraft
 msg-load-failed = No se ha podido cargar el archivo.
 msg-combos-restored =
     { $count ->
@@ -298,8 +301,7 @@ prefs-emoji-enable = Sustituir los códigos cortos de emoji
 prefs-left-delimiter = Delimitador izquierdo
 prefs-right-delimiter = Delimitador derecho
 prefs-example = Ejemplo:
-prefs-emoji-list = Lista completa de códigos cortos de emoji
-prefs-emoji-list-hint = La lista de códigos cortos de GitHub, los que usa ExpanderCraft. La sección «GitHub Custom Emoji» y los emojis más recientes pueden no funcionar.
+prefs-emoji-list = Lista de emojis...
 prefs-excluded-apps = Aplicaciones excluidas...
 prefs-sensitive-apps = Aplicaciones sensibles...
 prefs-show-emojis-in-picker = Mostrar emojis en el selector de combos (a partir de 3 caracteres)
@@ -365,3 +367,29 @@ key-right = Derecha
 key-up = Arriba
 key-down = Abajo
 key-print = ImprPant
+
+## Emoji list
+
+menu-emoji-list = Lista de emojis
+emoji-list-title = Códigos cortos de emoji
+emoji-list-intro = Escribe el código entre los delimitadores, por ejemplo { $example }. Los nombres están en inglés.
+emoji-list-disabled = La sustitución de emojis está desactivada: actívala en Preferencias › Emojis.
+emoji-list-search = Buscar por código o nombre...
+emoji-list-count =
+    { $count ->
+        [one] { $count } emoji
+       *[other] { $count } emojis
+    }
+emoji-list-no-match = Ningún emoji coincide con la búsqueda.
+emoji-list-click-hint = Haz clic en una fila para copiar su código.
+emoji-list-copied = Copiado: { $code }
+emoji-group-all = Todas las categorías
+emoji-group-smileys = Caras y emociones
+emoji-group-people = Personas y cuerpo
+emoji-group-animals = Animales y naturaleza
+emoji-group-food = Comida y bebida
+emoji-group-travel = Viajes y lugares
+emoji-group-activities = Actividades
+emoji-group-objects = Objetos
+emoji-group-symbols = Símbolos
+emoji-group-flags = Banderas

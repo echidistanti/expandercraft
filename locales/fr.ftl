@@ -48,8 +48,8 @@ menu-delete-group = Supprimer le groupe...
 menu-backup = Sauvegarder la liste des combos...
 menu-restore = Restaurer la liste des combos...
 menu-restore-auto = Restaurer une sauvegarde automatique...
-menu-cheat-sheet = Créer une antisèche (CSV)...
-menu-cheat-sheet-hint = Crée un fichier CSV avec le groupe, le nom, le mot-clé et le snippet de chaque combo, à imprimer ou à ouvrir dans un tableur pour retrouver vos mots-clés.
+menu-cheat-sheet = Créer une antisèche (PDF ou CSV)...
+menu-cheat-sheet-hint = Liste le nom, le mot-clé et le snippet de chaque combo, groupe par groupe : un PDF prêt à imprimer, ou un fichier CSV à ouvrir dans un tableur.
 menu-open-data-folder = Ouvrir le dossier des données
 menu-open-log = Ouvrir le fichier journal
 menu-variables-reference = Référence des variables
@@ -122,6 +122,9 @@ msg-exported = Les combos ont été exportés.
 msg-export-failed = Les combos n'ont pas pu être exportés.
 msg-backup-saved = La sauvegarde a été enregistrée.
 msg-cheat-sheet-done = L'antisèche a été créée.
+cheat-sheet-page = Page { $page } sur { $total }
+cheat-sheet-disabled-note = Les combos et les groupes désactivés apparaissent en gris.
+cheat-sheet-title = Antisèche ExpanderCraft
 msg-load-failed = Le fichier n'a pas pu être chargé.
 msg-combos-restored =
     { $count ->
@@ -298,8 +301,7 @@ prefs-emoji-enable = Remplacer les shortcodes d'emojis
 prefs-left-delimiter = Délimiteur gauche
 prefs-right-delimiter = Délimiteur droit
 prefs-example = Exemple :
-prefs-emoji-list = Liste complète des shortcodes d'emojis
-prefs-emoji-list-hint = La liste des shortcodes de GitHub, ceux qu'utilise ExpanderCraft. La section « GitHub Custom Emoji » et les emojis les plus récents peuvent ne pas fonctionner.
+prefs-emoji-list = Liste des emojis...
 prefs-excluded-apps = Applications exclues...
 prefs-sensitive-apps = Applications sensibles...
 prefs-show-emojis-in-picker = Afficher les emojis dans le sélecteur de combos (à partir de 3 caractères)
@@ -365,3 +367,29 @@ key-right = Droite
 key-up = Haut
 key-down = Bas
 key-print = Impr. écran
+
+## Emoji list
+
+menu-emoji-list = Liste des emojis
+emoji-list-title = Shortcodes d'emojis
+emoji-list-intro = Tapez le code entre les délimiteurs, par exemple { $example }. Les noms sont en anglais.
+emoji-list-disabled = La substitution des emojis est désactivée : activez-la dans Préférences › Emojis.
+emoji-list-search = Rechercher par code ou par nom...
+emoji-list-count =
+    { $count ->
+        [one] { $count } emoji
+       *[other] { $count } emojis
+    }
+emoji-list-no-match = Aucun emoji ne correspond à la recherche.
+emoji-list-click-hint = Cliquez sur une ligne pour copier son code.
+emoji-list-copied = Copié : { $code }
+emoji-group-all = Toutes les catégories
+emoji-group-smileys = Smileys et émotions
+emoji-group-people = Personnes et corps
+emoji-group-animals = Animaux et nature
+emoji-group-food = Nourriture et boissons
+emoji-group-travel = Voyages et lieux
+emoji-group-activities = Activités
+emoji-group-objects = Objets
+emoji-group-symbols = Symboles
+emoji-group-flags = Drapeaux

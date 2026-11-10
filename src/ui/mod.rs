@@ -1,6 +1,7 @@
 //! The user interface (egui / eframe): main window, dialogs, preferences, combo picker and input dialog.
 
 mod dialogs;
+mod emoji_list;
 mod main_window;
 mod picker;
 mod prefs_window;

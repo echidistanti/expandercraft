@@ -28,6 +28,7 @@ pub struct PrefsWindow {
 enum Extra {
     Record(RecordTarget),
     AppList(AppListKind),
+    EmojiList,
     ResetPrefs,
     ChangeComboFolder,
     ResetComboFolder,
@@ -89,6 +90,7 @@ impl ExpanderApp {
                     }
                 }
                 Extra::AppList(kind) => self.dialog = Some(Dialog::AppList(AppListEditor::new(&self.shared, kind))),
+                Extra::EmojiList => self.dialog = Some(Dialog::EmojiList(Default::default())),
                 Extra::ResetPrefs => {
                     self.dialog =
                         Some(Dialog::Confirm(Confirm::new(tr("prefs-confirm-reset").to_string(), ConfirmAction::ResetPreferences)))
@@ -148,9 +150,6 @@ impl ExpanderApp {
         }
     }
 }
-
-/// The list of GitHub (gemoji) emoji shortcodes, by category.
-const EMOJI_LIST_URL: &str = "https://github.com/ikatyang/emoji-cheat-sheet";
 
 fn section(ui: &mut egui::Ui, title: &str) {
     ui.add_space(6.0);
@@ -341,7 +340,9 @@ fn emojis_tab(ui: &mut egui::Ui, p: &mut Preferences, extras: &mut Vec<Extra>) {
     });
     // usable even before enabling the substitution, to see which codes exist
     ui.add_space(4.0);
-    ui.hyperlink_to(format!("🔗 {}", tr("prefs-emoji-list")), EMOJI_LIST_URL).on_hover_text(tr("prefs-emoji-list-hint"));
+    if ui.button(tr("prefs-emoji-list")).clicked() {
+        extras.push(Extra::EmojiList);
+    }
     section(ui, tr("prefs-section-picker"));
     ui.checkbox(&mut p.show_emojis_in_picker, tr("prefs-show-emojis-in-picker"));
 }
