@@ -44,6 +44,16 @@ pub trait VariableHost {
     fn random_index(&mut self, len: usize) -> usize;
 }
 
+/// Put before each `{` of a text that comes from outside the snippet (clipboard, input, environment variable,
+/// PowerShell), so that [`crate::fragments`] does not run the `#{key:}`, `#{shortcut:}`, `#{delay:}` or
+/// `#{cursor}` it may contain: copied text could otherwise press keys. Even a `#` written by the snippet just
+/// before the value cannot form a `#{` with it. Removed before the text is inserted.
+pub const LITERAL_MARK: char = '\u{E000}';
+
+fn literal(text: String) -> String {
+    text.replace('{', "\u{E000}{")
+}
+
 /// State shared across the (possibly recursive) evaluation of a snippet.
 #[derive(Debug, Default)]
 pub struct EvalState {
@@ -116,7 +126,7 @@ enum CaseChange {
 fn evaluate_variable(variable: &str, host: &mut dyn VariableHost, forbidden: &HashSet<String>, state: &mut EvalState) -> Option<String> {
     let unchanged = || Some(format!("#{{{variable}}}"));
     match variable {
-        "clipboard" => return Some(host.clipboard_text()),
+        "clipboard" => return Some(literal(host.clipboard_text())),
         "discordemoji" => return Some(discord_emojis(&host.clipboard_text())),
         "date" => return Some(host.system_date(&host.now(), DateKind::Date)),
         "time" => return Some(host.system_date(&host.now(), DateKind::Time)),
@@ -163,21 +173,21 @@ fn evaluate_variable(variable: &str, host: &mut dyn VariableHost, forbidden: &Ha
     }
     if let Some(description) = variable.strip_prefix("input:") {
         if let Some(v) = state.known_inputs.get(description) {
-            return Some(v.clone());
+            return Some(literal(v.clone()));
         }
         let value = host.prompt_input(&resolve_escaping(description))?;
         state.known_inputs.insert(description.to_string(), value.clone());
-        return Some(value);
+        return Some(literal(value));
     }
     if let Some(name) = variable.strip_prefix("envVar:") {
-        return Some(host.env_var(name));
+        return Some(literal(host.env_var(name)));
     }
     if let Some(param) = variable.strip_prefix("powershell:") {
         let (path, timeout) = split_powershell_param(param);
         if path.is_empty() {
             return Some(String::new());
         }
-        return Some(host.run_powershell(&resolve_escaping(path), timeout));
+        return Some(literal(host.run_powershell(&resolve_escaping(path), timeout)));
     }
     unchanged()
 }

@@ -897,10 +897,6 @@ pub fn is_own_process_foreground() -> bool {
 // Misc
 // ---------------------------------------------------------------------------------------------------------------------
 
-pub fn post_substitution_grace() -> Duration {
-    Duration::ZERO
-}
-
 pub fn powershell_exe() -> &'static str {
     "powershell.exe"
 }

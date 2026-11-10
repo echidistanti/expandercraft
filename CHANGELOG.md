@@ -1,5 +1,17 @@
 # Novità
 
+## 0.2.2 — 10 novembre 2026
+
+- **Sicurezza**: il testo inserito da `#{clipboard}`, `#{input:}`, `#{envVar:}` e `#{powershell:}` non viene più interpretato. Prima un testo copiato con dentro `#{shortcut:Win+R}…#{key:enter}` poteva premere tasti ed eseguire comandi.
+- La lista delle combo che non si riesce a leggere all'avvio non viene più sostituita da una lista vuota, e non viene sovrascritta finché non la ripristini. Il messaggio parla della copia di sicurezza solo se la copia è riuscita davvero.
+- Lista in una cartella condivisa (OneDrive, Dropbox…): le modifiche fatte su un altro computer vengono ricaricate entro pochi secondi. Se il file è cambiato mentre modificavi una combo, ExpanderCraft lo ricarica e ti avvisa, invece di sovrascrivere le modifiche dell'altro computer.
+- Un errore durante una sostituzione non spegne più le espansioni fino al riavvio. Uno spostamento di data enorme (`#{dateTime:+100000000d:}`) viene ignorato.
+- L'importazione di un file JSON non valido (per esempio di una versione più recente) mostra l'errore, invece di importare frammenti di JSON come se fosse un CSV.
+- Premendo due volte la scorciatoia del selettore, la combo scelta arriva comunque nell'applicazione di partenza.
+- Un valore non valido nelle preferenze azzera solo quel valore, e non più tutte le preferenze (cartella della lista compresa). Il file originale viene conservato come `settings.broken.json`.
+- Interfaccia più leggera: la finestra di importazione da Beeftext non rilegge più il file a ogni ridisegno, e il selettore e la tabella ordinano le combo con meno lavoro.
+- Pulizia del codice: tolti la dipendenza `rand` e il codice rimasto inutilizzato dal backend Linux.
+
 ## 0.2.1 — 10 novembre 2026
 
 - Di default l'interfaccia usa la lingua del sistema, e l'inglese se la lingua del sistema non è tradotta.

@@ -75,6 +75,15 @@ fn main() {
         }
     }
 
+    // reload the combo list when another computer sharing its folder (OneDrive, Dropbox...) changes it
+    let s = shared.clone();
+    let _ = std::thread::Builder::new().name("expandercraft-library-watch".into()).spawn(move || {
+        loop {
+            std::thread::sleep(std::time::Duration::from_secs(3));
+            s.reload_library_if_changed();
+        }
+    });
+
     let engine = Engine::new(shared.clone(), engine_rx, platform::new_keyboard(), platform::new_clipboard()).spawn();
     let sink: platform::SharedSink = shared.clone();
     if let Err(e) = platform::start_input_monitor(sink) {

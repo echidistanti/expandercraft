@@ -145,6 +145,7 @@ msg-backups-removed =
 msg-library-load-failed = The combo list could not be loaded.
 msg-library-copy-saved = A copy of the file was saved as: { $path }
 msg-library-save-failed = The combo list could not be saved.
+msg-library-reloaded = The combo list was changed by another program or computer, and it has been reloaded. Your last change was not saved: please make it again.
 msg-invalid-combos-ignored =
     { $count ->
         [one] { $count } invalid combo was ignored while loading the combo list.

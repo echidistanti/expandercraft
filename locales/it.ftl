@@ -141,6 +141,7 @@ msg-backups-removed =
 msg-library-load-failed = Impossibile caricare la lista delle combo.
 msg-library-copy-saved = Una copia del file è stata salvata come: { $path }
 msg-library-save-failed = Impossibile salvare la lista delle combo.
+msg-library-reloaded = La lista delle combo è stata modificata da un altro programma o computer ed è stata ricaricata. L'ultima modifica non è stata salvata: rifalla.
 msg-invalid-combos-ignored =
     { $count ->
         [one] Durante il caricamento è stata ignorata { $count } combo non valida.

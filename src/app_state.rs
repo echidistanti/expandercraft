@@ -1,10 +1,10 @@
 //! State shared between the input monitor, the substitution engine and the user interface.
 
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::time::{Duration, Instant};
+use std::time::{Duration, SystemTime};
 
 use chrono::NaiveDateTime;
 use crossbeam_channel::{Receiver, Sender};
@@ -28,9 +28,15 @@ pub enum UiMsg {
     ShowPreferences,
     PromptInput { description: String, reply: Sender<Option<String>> },
     ShortcutRecorded(Shortcut),
-    EnabledChanged,
-    LibraryChanged,
     Quit,
+}
+
+/// Size and modification time of a file, to notice that someone else changed it.
+type FileStamp = (SystemTime, u64);
+
+fn file_stamp(path: &Path) -> Option<FileStamp> {
+    let m = std::fs::metadata(path).ok()?;
+    Some((m.modified().ok()?, m.len()))
 }
 
 /// Sends messages to the UI and wakes it up (the UI may be hidden in the system tray).
@@ -59,6 +65,9 @@ impl UiBridge {
 pub struct AppShared {
     pub paths: AppPaths,
     pub library: RwLock<Library>,
+    /// The combo list file as it was when last read or written. A file that differs (changed by another
+    /// computer sharing the folder, or unreadable at startup) is never overwritten, see [`Self::save_library`].
+    library_stamp: Mutex<Option<FileStamp>>,
     pub prefs: RwLock<Preferences>,
     pub excluded_apps: RwLock<ProcessList>,
     pub sensitive_apps: RwLock<ProcessList>,
@@ -71,7 +80,6 @@ pub struct AppShared {
     enabled: AtomicBool,
     space_trigger: AtomicBool,
     pub substituting: AtomicBool,
-    suspended_until: Mutex<Option<Instant>>,
     pub recording_shortcut: AtomicBool,
     hook_shortcuts: RwLock<Vec<Shortcut>>,
     /// The text typed since the last breaker, kept by the input thread in the order of the keystrokes (the
@@ -92,12 +100,12 @@ impl AppShared {
             emoji_last_use: Mutex::new(load_emoji_last_use(&paths.emoji_last_use_file())),
             paths,
             library: RwLock::new(Library::default()),
+            library_stamp: Mutex::new(None),
             prefs: RwLock::new(prefs),
             startup_errors: Mutex::new(Vec::new()),
             enabled: AtomicBool::new(true),
             space_trigger: AtomicBool::new(false),
             substituting: AtomicBool::new(false),
-            suspended_until: Mutex::new(None),
             recording_shortcut: AtomicBool::new(false),
             hook_shortcuts: RwLock::new(Vec::new()),
             typed: Mutex::new(String::new()),
@@ -137,7 +145,7 @@ impl AppShared {
         self.refresh_hook_config();
         self.save_prefs();
         let _ = self.engine_tx.send(EngineMsg::ResetBuffer);
-        self.ui.send(UiMsg::EnabledChanged);
+        self.ui.wake();
     }
 
     pub fn begin_substitution(&self) {
@@ -145,10 +153,6 @@ impl AppShared {
     }
 
     pub fn end_substitution(&self) {
-        let grace = crate::platform::post_substitution_grace();
-        if !grace.is_zero() {
-            *self.suspended_until.lock() = Some(Instant::now() + grace);
-        }
         self.substituting.store(false, Ordering::SeqCst);
     }
 
@@ -172,7 +176,9 @@ impl AppShared {
         let path = self.library_path();
         let mut lib = Library::default();
         let mut needs_save = false;
+        let mut readable = true;
         if path.exists() {
+            let stamp = file_stamp(&path);
             match Library::load(&path) {
                 Ok(parsed) => {
                     needs_save = parsed.older_format;
@@ -180,17 +186,19 @@ impl AppShared {
                         self.startup_errors.lock().push(tr!("msg-invalid-combos-ignored", count = parsed.skipped));
                     }
                     lib = parsed.library;
+                    *self.library_stamp.lock() = stamp;
                 }
                 Err(e) => {
                     log::error!("Could not load the combo list: {e:#}");
-                    // keep a copy of the unreadable file, so that it is not overwritten
+                    // the file is not overwritten (it was not read, see save_library); keep a copy of it anyway
+                    readable = false;
                     let broken = path.with_extension(format!("broken-{}.json", chrono::Local::now().format("%Y%m%d%H%M%S")));
-                    let _ = std::fs::copy(&path, &broken);
-                    self.startup_errors.lock().push(format!(
-                        "{}\n{e:#}\n{}",
-                        tr("msg-library-load-failed"),
-                        tr!("msg-library-copy-saved", path = broken.display().to_string())
-                    ));
+                    let mut text = format!("{}\n{e:#}", tr("msg-library-load-failed"));
+                    if std::fs::copy(&path, &broken).is_ok() {
+                        text.push('\n');
+                        text.push_str(&tr!("msg-library-copy-saved", path = broken.display().to_string()));
+                    }
+                    self.startup_errors.lock().push(text);
                 }
             }
         }
@@ -200,7 +208,10 @@ impl AppShared {
         needs_save |= lib.ensure_correct_grouping(tr("app-default-group"));
         needs_save |= lib.localize_default_group_names(&crate::i18n::translations("app-default-group"), tr("app-default-group"));
         *self.library.write() = lib;
-        if needs_save && let Err(e) = self.save_library() {
+        if needs_save
+            && readable
+            && let Err(e) = self.save_library()
+        {
             log::warn!("Could not save the combo list after loading it: {e:#}");
         }
     }
@@ -215,14 +226,63 @@ impl AppShared {
     }
 
     /// Save the library (with an automatic backup of the previous version if enabled).
+    ///
+    /// A file that is not the one read or written last is never overwritten: it was changed by another computer
+    /// sharing the folder (or could not be read at startup). The library is reloaded from it instead, and an
+    /// error tells the user that the last change was not saved.
     pub fn save_library(&self) -> anyhow::Result<()> {
+        let on_disk = file_stamp(&self.library_path());
+        if on_disk.is_some() && on_disk != *self.library_stamp.lock() {
+            self.reload_library()?;
+            anyhow::bail!(tr("msg-library-reloaded"));
+        }
+        self.write_library()
+    }
+
+    /// Replace the library and save it, whatever the file contains (restore, Beeftext import...).
+    pub fn replace_library(&self, lib: Library) -> anyhow::Result<()> {
+        *self.library.write() = lib;
+        self.write_library()
+    }
+
+    fn write_library(&self) -> anyhow::Result<()> {
         let path = self.library_path();
         if self.prefs.read().auto_backup {
             crate::backup::archive(&path, &self.backup_dir());
         }
         let lib = self.library.read();
         lib.save(&path, true)?;
+        *self.library_stamp.lock() = file_stamp(&path);
         let _ = library::write_atomic(&self.paths.last_use_file(), lib.last_use_json().as_bytes());
+        Ok(())
+    }
+
+    /// Reload the library if its file was changed by someone else (another computer sharing the folder).
+    /// Called every few seconds by a background thread.
+    pub fn reload_library_if_changed(&self) {
+        let on_disk = file_stamp(&self.library_path());
+        if on_disk.is_none() || on_disk == *self.library_stamp.lock() {
+            return;
+        }
+        match self.reload_library() {
+            Ok(()) => self.ui.wake(),
+            // not readable yet (being synchronized...): tried again next time
+            Err(e) => log::debug!("Could not reload the combo list: {e:#}"),
+        }
+    }
+
+    fn reload_library(&self) -> anyhow::Result<()> {
+        let path = self.library_path();
+        // the stamp is taken first: if the file changes while it is read, it is simply read again later
+        let stamp = file_stamp(&path);
+        let mut lib = Library::load(&path)?.library;
+        if let Ok(text) = std::fs::read_to_string(self.paths.last_use_file()) {
+            lib.apply_last_use_json(&text);
+        }
+        lib.ensure_correct_grouping(tr("app-default-group"));
+        *self.library.write() = lib;
+        *self.library_stamp.lock() = stamp;
+        log::info!("The combo list was changed by another program or computer: reloaded.");
         Ok(())
     }
 
@@ -238,7 +298,7 @@ impl AppShared {
             c.last_use = Some(library::now());
         }
         self.save_last_use();
-        self.ui.send(UiMsg::LibraryChanged);
+        self.ui.wake();
     }
 
     pub fn mark_emoji_used(&self, shortcode: &str) {
@@ -323,18 +383,7 @@ impl InputSink for AppShared {
     }
 
     fn is_suspended(&self) -> bool {
-        if self.substituting.load(Ordering::Relaxed) {
-            return true;
-        }
-        let mut until = self.suspended_until.lock();
-        match *until {
-            Some(t) if Instant::now() < t => true,
-            Some(_) => {
-                *until = None;
-                false
-            }
-            None => false,
-        }
+        self.substituting.load(Ordering::Relaxed)
     }
 
     fn is_excluded_app(&self, app_name: &str) -> bool {
@@ -350,5 +399,66 @@ impl InputSink for AppShared {
 pub fn sleep_ms(ms: u64) {
     if ms > 0 {
         std::thread::sleep(Duration::from_millis(ms));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::library::Combo;
+
+    fn shared_in(name: &str) -> (AppShared, PathBuf) {
+        let dir = std::env::temp_dir().join(format!("expandercraft-{name}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let (tx, _rx) = crossbeam_channel::unbounded();
+        let paths = AppPaths { data_dir: dir.clone(), portable: false };
+        let (shared, _ui) = AppShared::new(paths, Preferences::default(), tx);
+        (shared, dir.join(library::LIBRARY_FILE_NAME))
+    }
+
+    fn keywords(shared: &AppShared) -> Vec<String> {
+        shared.library.read().combos.iter().map(|c| c.keyword.clone()).collect()
+    }
+
+    #[test]
+    fn unreadable_list_is_not_overwritten() {
+        let (shared, file) = shared_in("unreadable");
+        let broken = r#"{ "fileFormatVersion": 10, "combos": [ {"keyword": "a", "#;
+        std::fs::write(&file, broken).unwrap();
+        shared.load_library();
+        assert_eq!(std::fs::read_to_string(&file).unwrap(), broken);
+        assert_eq!(shared.startup_errors.lock().len(), 1);
+        // a change made afterwards is not saved over the file either
+        shared.library.write().combos.push(Combo::new("", "kw", "text"));
+        assert!(shared.save_library().is_err());
+        assert_eq!(std::fs::read_to_string(&file).unwrap(), broken);
+    }
+
+    #[test]
+    fn changes_of_another_computer_are_reloaded_not_overwritten() {
+        let (shared, file) = shared_in("shared-folder");
+        shared.load_library();
+        shared.library.write().combos.push(Combo::new("", "mine", "text"));
+        shared.save_library().unwrap();
+
+        // another computer sharing the folder adds a combo
+        let mut other = Library::load(&file).unwrap().library;
+        other.combos.push(Combo::new("", "theirs", "other text"));
+        other.save(&file, true).unwrap();
+        shared.reload_library_if_changed();
+        assert_eq!(keywords(&shared), ["mine", "theirs"]);
+
+        // it changes the file again while a change is being made here: the file wins, and the user is told
+        other.combos.retain(|c| c.keyword != "mine");
+        other.save(&file, true).unwrap();
+        shared.library.write().combos.push(Combo::new("", "late", "text"));
+        assert!(shared.save_library().is_err());
+        assert_eq!(keywords(&shared), ["theirs"]);
+        assert_eq!(Library::load(&file).unwrap().library.combos.len(), 1);
+        // from now on, saving works again
+        shared.library.write().combos.push(Combo::new("", "late", "text"));
+        shared.save_library().unwrap();
+        assert_eq!(Library::load(&file).unwrap().library.combos.len(), 2);
     }
 }

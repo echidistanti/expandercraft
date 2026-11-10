@@ -33,21 +33,28 @@ pub fn default_date_time(dt: &DateTime<Local>, locale: Locale) -> String {
     format!("{} {}", default_date(dt, locale), default_time(dt, locale))
 }
 
-/// Apply a shift string such as `+1d-1w+3h` to a date/time. Invalid parts are ignored.
+/// Apply a shift string such as `+1d-1w+3h` to a date/time. Invalid parts, and shifts that would leave the
+/// range of dates (`+100000000d`), are ignored.
 pub fn apply_shift(dt: DateTime<Local>, shifts: &str) -> DateTime<Local> {
     let mut result = dt;
     for (sign, value, unit) in parse_shifts(shifts).unwrap_or_default() {
-        let v = value as i64 * if sign { 1 } else { -1 };
+        let Ok(v) = i64::try_from(value) else { continue };
+        let v = if sign { v } else { -v };
         result = match unit {
-            'y' => add_months(result, v * 12),
+            'y' => add_months(result, v.saturating_mul(12)),
             'M' => add_months(result, v),
-            'w' => result + Duration::weeks(v),
-            'd' => result + Duration::days(v),
-            'h' => result + Duration::hours(v),
-            'm' => result + Duration::minutes(v),
-            's' => result + Duration::seconds(v),
-            'z' => result + Duration::milliseconds(v),
-            _ => result,
+            _ => {
+                let delta = match unit {
+                    'w' => Duration::try_weeks(v),
+                    'd' => Duration::try_days(v),
+                    'h' => Duration::try_hours(v),
+                    'm' => Duration::try_minutes(v),
+                    's' => Duration::try_seconds(v),
+                    'z' => Duration::try_milliseconds(v),
+                    _ => None,
+                };
+                delta.and_then(|d| result.checked_add_signed(d)).unwrap_or(result)
+            }
         };
     }
     result
@@ -297,6 +304,11 @@ mod tests {
         assert_eq!((s.month(), s.day()), (2, 29));
         let s = apply_shift(dt, "+1d-1y+2h");
         assert_eq!((s.year(), s.month(), s.day(), s.hour()), (2019, 2, 1, 12));
+        // out of the range of dates: ignored, no crash
+        for huge in ["+100000000d", "-100000000d", "+9999999999999w", "+9223372036854775807y", "+18446744073709551615s"] {
+            assert_eq!(apply_shift(dt, huge), dt, "{huge}");
+        }
+        assert_eq!(apply_shift(dt, "+100000000d+1d").day(), 1);
     }
 
     #[test]
