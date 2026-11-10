@@ -74,6 +74,9 @@ pub struct AppShared {
     suspended_until: Mutex<Option<Instant>>,
     pub recording_shortcut: AtomicBool,
     hook_shortcuts: RwLock<Vec<Shortcut>>,
+    /// The text typed since the last breaker, kept by the input thread in the order of the keystrokes (the
+    /// engine has its own copy, updated a little later), to decide at once whether a space completes a combo.
+    typed: Mutex<String>,
 
     pub engine_tx: Sender<EngineMsg>,
     pub ui: UiBridge,
@@ -97,6 +100,7 @@ impl AppShared {
             suspended_until: Mutex::new(None),
             recording_shortcut: AtomicBool::new(false),
             hook_shortcuts: RwLock::new(Vec::new()),
+            typed: Mutex::new(String::new()),
             engine_tx,
             ui: UiBridge { tx: ui_tx, ctx: OnceLock::new() },
         };
@@ -274,7 +278,37 @@ fn load_emoji_last_use(path: &std::path::Path) -> HashMap<String, NaiveDateTime>
 
 impl InputSink for AppShared {
     fn on_event(&self, event: InputEvent) {
+        {
+            let mut typed = self.typed.lock();
+            match &event {
+                InputEvent::Char(c) if c.is_whitespace() => typed.clear(),
+                InputEvent::Char(c) => {
+                    typed.push(*c);
+                    // keep the end of the text, cutting on a character boundary (accented letters are multi-byte)
+                    if typed.len() > 1024 {
+                        let cut = typed.char_indices().map(|(i, _)| i).find(|i| *i >= 512).unwrap_or(0);
+                        typed.drain(..cut);
+                    }
+                }
+                InputEvent::Backspace => {
+                    typed.pop();
+                }
+                InputEvent::Breaker | InputEvent::SwallowedSpace => typed.clear(),
+                InputEvent::Shortcut(_) => {}
+            }
+        }
         let _ = self.engine_tx.send(EngineMsg::Input(event));
+    }
+
+    fn space_completes_combo(&self) -> bool {
+        if !self.space_is_trigger() || crate::platform::is_own_process_foreground() {
+            return false;
+        }
+        // never wait in the input thread: when the data is being changed, the space is simply not swallowed
+        let (Some(prefs), Some(lib), Some(typed)) = (self.prefs.try_read(), self.library.try_read(), self.typed.try_lock()) else {
+            return false;
+        };
+        !typed.is_empty() && lib.combos.iter().any(|c| lib.is_usable(c) && c.matches_input(&typed, &prefs))
     }
 
     fn wants_shortcut(&self, shortcut: &Shortcut) -> bool {

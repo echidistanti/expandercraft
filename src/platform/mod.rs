@@ -26,6 +26,9 @@ pub enum InputEvent {
     Breaker,
     /// A shortcut (Ctrl, Alt or Meta + key) that the sink asked to receive.
     Shortcut(Shortcut),
+    /// A space that completes a combo when the space is the trigger, swallowed by the input monitor: the
+    /// application never received it (see [`InputSink::space_completes_combo`]).
+    SwallowedSpace,
 }
 
 /// The receiver of input events. Called from the input monitoring thread: implementations must be fast.
@@ -40,6 +43,12 @@ pub trait InputSink: Send + Sync {
     fn is_excluded_app(&self, app_name: &str) -> bool;
     /// Is the space character a trigger (rather than a combo breaker)?
     fn space_is_trigger(&self) -> bool;
+    /// When the space is the trigger: would a space typed now complete a combo? The input monitor then
+    /// swallows it, so that the application does not react to it (spelling, autocorrection) while the keyword
+    /// is replaced: the Windows 11 Notepad, busy with it, could receive the paste shortcut as a plain "v".
+    fn space_completes_combo(&self) -> bool {
+        false
+    }
 }
 
 /// Keystroke synthesis.
@@ -53,6 +62,11 @@ pub trait Keyboard: Send {
     fn press_key(&mut self, key: Key, repeat: u32, delay_ms: u64);
     fn press_shortcut(&mut self, shortcut: &Shortcut);
     fn move_left(&mut self, count: usize);
+    /// Whether the user is holding a modifier key (Ctrl, Alt, AltGr, Shift, Win). The substitution waits for
+    /// their release, so that the keys it sends are not mixed with the ones the user holds.
+    fn modifiers_held(&self) -> bool {
+        false
+    }
 }
 
 /// Opaque clipboard content saved before pasting a snippet.

@@ -152,6 +152,11 @@ fn handle_event(sink: &SharedSink, event_type: CGEventType, event: &CGEvent) -> 
     let mut len: std::ffi::c_ulong = 0;
     unsafe { CGEventKeyboardGetUnicodeString(event.as_ptr() as *mut c_void, buf.len() as _, &mut len, buf.as_mut_ptr()) };
     let text = String::from_utf16_lossy(&buf[..(len as usize).min(buf.len())]);
+    // kVK_Space: a trigger space that completes a combo does not reach the application
+    if text == " " && keycode == 0x31 && sink.space_is_trigger() && sink.space_completes_combo() {
+        sink.on_event(InputEvent::SwallowedSpace);
+        return CallbackResult::Drop;
+    }
     for c in text.chars() {
         if c == '\u{8}' || c == '\u{7f}' {
             sink.on_event(InputEvent::Backspace);

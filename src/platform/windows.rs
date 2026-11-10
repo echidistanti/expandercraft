@@ -10,7 +10,7 @@
 #![allow(clippy::missing_safety_doc)]
 
 use std::sync::OnceLock;
-use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::time::Duration;
 
 use parking_lot::Mutex;
@@ -48,6 +48,8 @@ fn wide(s: &str) -> Vec<u16> {
 // ---------------------------------------------------------------------------------------------------------------------
 
 static SINK: OnceLock<SharedSink> = OnceLock::new();
+/// Set when a trigger space was swallowed, so that its key-up is swallowed too.
+static SPACE_SWALLOWED: AtomicBool = AtomicBool::new(false);
 static INPUT_OK: OnceLock<bool> = OnceLock::new();
 /// Physical state of the modifier keys (bit field), tracked from non-synthetic events.
 static PHYSICAL_MODIFIERS: AtomicU32 = AtomicU32::new(0);
@@ -141,6 +143,10 @@ unsafe extern "system" fn keyboard_proc(code: i32, wparam: WPARAM, lparam: LPARA
                 PHYSICAL_MODIFIERS.fetch_and(!bit, Ordering::Relaxed);
             }
         }
+        // the key-up of a swallowed trigger space is swallowed as well
+        if !is_down && info.vkCode as u16 == VK_SPACE && SPACE_SWALLOWED.swap(false, Ordering::Relaxed) {
+            return 1;
+        }
         if is_down
             && let Some(sink) = SINK.get()
             && process_key(sink.as_ref(), info)
@@ -220,6 +226,11 @@ unsafe fn process_key(sink: &dyn super::InputSink, info: &KBDLLHOOKSTRUCT) -> bo
     } else {
         unsafe { translate_key(info, ctrl, alt, shift, win) }
     };
+    if text == " " && vk == VK_SPACE && sink.space_is_trigger() && sink.space_completes_combo() {
+        sink.on_event(InputEvent::SwallowedSpace);
+        SPACE_SWALLOWED.store(true, Ordering::Relaxed);
+        return true;
+    }
     for c in text.chars() {
         if c == '\u{8}' {
             sink.on_event(InputEvent::Backspace);
@@ -455,6 +466,44 @@ fn send_mask_key() {
     tap(VK_MASK);
 }
 
+/// Pause between the modifiers and the key of a synthesized shortcut. Sent in a single batch, Ctrl+V reaches
+/// some applications (the Windows 11 Notepad, other WinUI apps) as a plain "v": they read the current state of
+/// the modifiers when they get to the key, and when they lag behind the input (Notepad after a space, with its
+/// spelling and autocorrection) Ctrl has already been released. The modifiers are held long enough for that.
+const CHORD_DELAY: Duration = Duration::from_millis(30);
+const CHORD_RELEASE_DELAY: Duration = Duration::from_millis(60);
+/// Pause before the paste shortcut, so that the application has handled the backspaces that erased the keyword.
+const PASTE_SETTLE_DELAY: Duration = Duration::from_millis(30);
+/// Pause between the backspaces that erase a keyword (and the arrows that place the cursor). Sent in a single
+/// batch, the Windows 11 Notepad loses one of them when the keyword starts with a punctuation mark: ".cf"
+/// left the "." in about half the attempts. Measured on Notepad: 5 ms still fails, 15 ms never did.
+const ERASE_KEY_DELAY: Duration = Duration::from_millis(15);
+
+/// Tap a key `count` times, pausing between the taps.
+fn tap_paced(vk: u16, count: usize) {
+    for i in 0..count {
+        tap(vk);
+        if i + 1 < count {
+            std::thread::sleep(ERASE_KEY_DELAY);
+        }
+    }
+}
+
+/// Press a key with modifiers held, leaving the application time to see the modifiers down.
+fn send_chord(modifiers: &[u16], vk: u16) {
+    if !modifiers.is_empty() {
+        send(&modifiers.iter().map(|m| vk_input(*m, false)).collect::<Vec<_>>());
+        std::thread::sleep(CHORD_DELAY);
+    }
+    send(&[vk_input(vk, false)]);
+    std::thread::sleep(Duration::from_millis(10));
+    send(&[vk_input(vk, true)]);
+    if !modifiers.is_empty() {
+        std::thread::sleep(CHORD_RELEASE_DELAY);
+        send(&modifiers.iter().rev().map(|m| vk_input(*m, true)).collect::<Vec<_>>());
+    }
+}
+
 /// Release the modifier keys currently down. Returns the keys that were released.
 fn release_modifiers() -> Vec<u16> {
     let pressed: Vec<u16> =
@@ -483,8 +532,7 @@ pub struct WinKeyboard;
 impl Keyboard for WinKeyboard {
     fn erase(&mut self, count: usize) {
         let mods = release_modifiers();
-        let inputs: Vec<INPUT> = (0..count).flat_map(|_| [vk_input(VK_BACK, false), vk_input(VK_BACK, true)]).collect();
-        send(&inputs);
+        tap_paced(VK_BACK, count);
         restore_modifiers(&mods);
     }
 
@@ -517,10 +565,11 @@ impl Keyboard for WinKeyboard {
 
     fn paste(&mut self, use_shift_insert: bool) {
         let mods = release_modifiers();
+        std::thread::sleep(PASTE_SETTLE_DELAY);
         if use_shift_insert {
-            send(&[vk_input(VK_LSHIFT, false), vk_input(VK_INSERT, false), vk_input(VK_INSERT, true), vk_input(VK_LSHIFT, true)]);
+            send_chord(&[VK_LSHIFT], VK_INSERT);
         } else {
-            send(&[vk_input(VK_LCONTROL, false), vk_input(b'V' as u16, false), vk_input(b'V' as u16, true), vk_input(VK_LCONTROL, true)]);
+            send_chord(&[VK_LCONTROL], b'V' as u16);
         }
         restore_modifiers(&mods);
     }
@@ -542,18 +591,17 @@ impl Keyboard for WinKeyboard {
             .into_iter()
             .filter_map(|(on, k)| on.then_some(k))
             .collect();
-        let mut inputs: Vec<INPUT> = held.iter().map(|k| vk_input(*k, false)).collect();
-        inputs.push(vk_input(vk, false));
-        inputs.push(vk_input(vk, true));
-        inputs.extend(held.iter().rev().map(|k| vk_input(*k, true)));
-        send(&inputs);
+        send_chord(&held, vk);
         restore_modifiers(&mods);
+    }
+
+    fn modifiers_held(&self) -> bool {
+        MODIFIER_KEYS.iter().any(|vk| unsafe { (GetAsyncKeyState(*vk as i32) as u16 & 0x8000) != 0 })
     }
 
     fn move_left(&mut self, count: usize) {
         let mods = release_modifiers();
-        let inputs: Vec<INPUT> = (0..count).flat_map(|_| [vk_input(VK_LEFT, false), vk_input(VK_LEFT, true)]).collect();
-        send(&inputs);
+        tap_paced(VK_LEFT, count);
         restore_modifiers(&mods);
     }
 }
