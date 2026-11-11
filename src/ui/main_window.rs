@@ -47,7 +47,6 @@ pub enum Action {
     Backup,
     Restore,
     RestoreAuto,
-    CheatSheet,
     OpenDataFolder,
     OpenLog,
     Preferences,
@@ -170,10 +169,6 @@ impl ExpanderApp {
             }
             if ui.button(tr("menu-restore-auto")).clicked() {
                 actions.push(Action::RestoreAuto);
-            }
-            ui.separator();
-            if ui.button(tr("menu-cheat-sheet")).on_hover_text(tr("menu-cheat-sheet-hint")).clicked() {
-                actions.push(Action::CheatSheet);
             }
             ui.separator();
             if ui.button(tr("menu-open-data-folder")).clicked() {
@@ -664,7 +659,6 @@ impl ExpanderApp {
             Action::Backup => self.manual_backup(),
             Action::Restore => self.restore_from_file(),
             Action::RestoreAuto => self.dialog = Some(Dialog::RestoreBackup(RestoreBackupDialog::new(&self.shared.backup_dir()))),
-            Action::CheatSheet => self.cheat_sheet(),
             Action::OpenDataFolder => crate::platform::open_path(&self.shared.paths.data_dir),
             Action::OpenLog => {
                 if let Some(p) = crate::logger::log_path() {
@@ -778,48 +772,6 @@ impl ExpanderApp {
         let Some(path) = self.file_dialog().add_filter("JSON", &["json"]).pick_file() else { return };
         self.remember_dir(&path);
         self.dialog = Some(Dialog::Confirm(Confirm::new(tr("confirm-replace-library").to_string(), ConfirmAction::RestoreFrom(path))));
-    }
-
-    fn cheat_sheet(&mut self) {
-        let Some(mut path) = self
-            .file_dialog()
-            .set_file_name(format!("{}.pdf", tr("file-name-cheat-sheet")))
-            .add_filter("PDF", &["pdf"])
-            .add_filter("CSV", &["csv"])
-            .save_file()
-        else {
-            return;
-        };
-        self.remember_dir(&path);
-        let has_ext = |ext: &str| path.extension().is_some_and(|e| e.eq_ignore_ascii_case(ext));
-        let csv = has_ext("csv");
-        if !csv && !has_ext("pdf") {
-            let mut name = path.into_os_string();
-            name.push(".pdf");
-            path = name.into();
-        }
-        let library = self.shared.library.read();
-        let r = if csv {
-            library.export_cheat_sheet(&path, [tr("label-group"), tr("label-name"), tr("label-keyword"), tr("label-snippet")])
-        } else {
-            let sections = library.cheat_sheet_sections();
-            let counts = tr!("app-status-counts", combos = library.combos.len(), groups = library.groups.len());
-            let labels = crate::cheat_sheet::Labels {
-                title: tr("cheat-sheet-title").to_string(),
-                subtitle: format!("{counts} · {}", crate::i18n::long_date(chrono::Local::now().date_naive())),
-                name: tr("label-name").to_string(),
-                keyword: tr("label-keyword").to_string(),
-                snippet: tr("label-snippet").to_string(),
-                disabled_note: tr("cheat-sheet-disabled-note").to_string(),
-                page: Box::new(|page, total| tr!("cheat-sheet-page", page = page, total = total)),
-            };
-            crate::cheat_sheet::write_pdf(&path, &sections, &labels)
-        };
-        drop(library);
-        match r {
-            Ok(()) => self.info(tr("msg-cheat-sheet-done")),
-            Err(e) => self.error(format!("{e:#}")),
-        }
     }
 }
 

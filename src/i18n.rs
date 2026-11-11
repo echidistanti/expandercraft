@@ -158,17 +158,6 @@ pub fn generation() -> u64 {
     GENERATION.load(Ordering::Relaxed)
 }
 
-/// A date written out in the language of the user interface ("10 November 2026").
-pub fn long_date(date: chrono::NaiveDate) -> String {
-    let (locale, format) = match current() {
-        Lang::En => (chrono::Locale::en_US, "%B %-d, %Y"),
-        Lang::It => (chrono::Locale::it_IT, "%-d %B %Y"),
-        Lang::Fr => (chrono::Locale::fr_FR, "%-d %B %Y"),
-        Lang::Es => (chrono::Locale::es_ES, "%-d de %B de %Y"),
-    };
-    date.format_localized(format, locale).to_string()
-}
-
 /// Translate a message without arguments.
 pub fn tr(id: &'static str) -> &'static str {
     let lang = current();
