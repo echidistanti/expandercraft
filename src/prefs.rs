@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 
+use crate::i18n::Lang;
 use crate::library::{CaseSensitivity, MatchingMode};
 use crate::shortcut::Shortcut;
 
@@ -21,10 +22,9 @@ pub enum Language {
     #[serde(alias = "Auto")]
     #[default]
     System,
-    English,
-    Italian,
-    French,
-    Spanish,
+    /// Written as the name of the language ("Italian").
+    #[serde(untagged)]
+    Fixed(Lang),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -182,7 +182,9 @@ mod tests {
     fn system_language_by_default() {
         assert_eq!(Preferences::default().language, Language::System);
         let p: Preferences = serde_json::from_str(r#"{"language": "Italian"}"#).unwrap();
-        assert_eq!(p.language, Language::Italian);
+        assert_eq!(p.language, Language::Fixed(Lang::Italian));
+        assert_eq!(serde_json::to_value(p.language).unwrap(), "Italian");
+        assert_eq!(serde_json::to_value(Language::System).unwrap(), "System");
         // the value written by 0.1.0
         let p: Preferences = serde_json::from_str(r#"{"language": "Auto"}"#).unwrap();
         assert_eq!(p.language, Language::System);
