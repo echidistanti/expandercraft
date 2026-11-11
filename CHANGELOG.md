@@ -2,7 +2,7 @@
 
 ## Non ancora pubblicato
 
-- Si leggono solo i file nel formato dell'ultima Beeftext (versione 10, lo stesso che ExpanderCraft ha sempre scritto). I formati 1–9 delle Beeftext più vecchie non vengono più convertiti, e con loro se ne va la conversione degli snippet in HTML: un file del genere va prima esportato da una Beeftext aggiornata.
+- Si leggono solo i file nel formato dell'ultima Beeftext (versione 10, lo stesso che ExpanderCraft ha sempre scritto). I formati 1–9 delle Beeftext più vecchie non vengono più convertiti, e con loro se ne va la conversione degli snippet in HTML: un file del genere va prima esportato da una Beeftext aggiornata, e anche la finestra di migrazione del primo avvio ora lo dice invece di disattivare il pulsante senza spiegazioni.
 
 ## 0.3.0 — 11 novembre 2026
 
