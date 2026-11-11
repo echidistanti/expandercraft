@@ -172,26 +172,36 @@ impl AppListEditor {
     }
 }
 
+/// The OK and Cancel buttons at the bottom of a dialog. Returns (OK clicked, Cancel clicked).
 fn buttons_row(ui: &mut egui::Ui, ok_label: &str, ok_enabled: bool) -> (bool, bool) {
-    let mut ok = false;
-    let mut cancel = false;
     ui.add_space(8.0);
-    let size = egui::vec2(ui.available_width(), 30.0);
-    ui.allocate_ui_with_layout(size, Layout::right_to_left(Align::Center), |ui| {
+    right_aligned(ui, |ui| {
         let accent = style::accent(ui);
         let b = egui::Button::new(RichText::new(ok_label).color(egui::Color32::WHITE)).fill(accent).min_size(egui::vec2(90.0, 0.0));
-        if ui.add_enabled(ok_enabled, b).clicked() {
-            ok = true;
-        }
-        if ui.add(egui::Button::new(tr("app-cancel")).min_size(egui::vec2(90.0, 0.0))).clicked() {
-            cancel = true;
-        }
-    });
-    (ok, cancel)
+        let ok = ui.add_enabled(ok_enabled, b).clicked();
+        (ok, ui.add(egui::Button::new(tr("app-cancel")).min_size(egui::vec2(90.0, 0.0))).clicked())
+    })
+}
+
+pub(super) fn right_aligned<R>(ui: &mut egui::Ui, add: impl FnOnce(&mut egui::Ui) -> R) -> R {
+    ui.allocate_ui_with_layout(egui::vec2(ui.available_width(), 30.0), Layout::right_to_left(Align::Center), add).inner
+}
+
+pub(super) fn ok_button(ui: &mut egui::Ui) -> bool {
+    ui.add(egui::Button::new(tr("app-ok")).min_size(egui::vec2(90.0, 0.0))).clicked()
 }
 
 pub(super) fn modal(id: &str) -> egui::Modal {
     egui::Modal::new(Id::unique(id))
+}
+
+/// Show a modal whose body returns (OK, Cancel), usually from [`buttons_row`]. Some(true) for OK, Some(false) when
+/// cancelled or closed (Escape, click outside), None while it stays open.
+fn ok_cancel(ctx: &egui::Context, id: &str, body: impl FnOnce(&mut egui::Ui) -> (bool, bool)) -> Option<bool> {
+    let mut answer = (false, false);
+    let r = modal(id).show(ctx, |ui| answer = body(ui));
+    let (ok, cancel) = answer;
+    if cancel || (r.should_close() && !ok) { Some(false) } else { ok.then_some(true) }
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -228,14 +238,7 @@ impl ExpanderApp {
             ui.add_space(6.0);
             ui.label(&text);
             ui.add_space(10.0);
-            ui.allocate_ui_with_layout(egui::vec2(ui.available_width(), 30.0), Layout::right_to_left(Align::Center), |ui| {
-                if ui.add(egui::Button::new(tr("app-ok")).min_size(egui::vec2(90.0, 0.0))).clicked() {
-                    close = true;
-                }
-            });
-            if ui.input(|i| i.key_pressed(egui::Key::Enter)) {
-                close = true;
-            }
+            close = right_aligned(ui, ok_button) || ui.input(|i| i.key_pressed(egui::Key::Enter));
         });
         if close || r.should_close() {
             self.messages.remove(0);
@@ -254,10 +257,8 @@ impl ExpanderApp {
                 .flatten();
             (lib.groups.iter().map(|g| (g.uuid, g.name.clone())).collect(), dup)
         };
-        let mut ok = false;
-        let mut cancel = false;
         let snippet_id = Id::unique("combo_snippet_editor");
-        let r = modal("combo_editor").show(ctx, |ui| {
+        let answer = ok_cancel(ctx, "combo_editor", |ui| {
             ui.set_width(640.0);
             ui.heading(if ed.is_new { tr("label-new-combo") } else { tr("editor-edit-title") });
             ui.add_space(8.0);
@@ -340,7 +341,7 @@ impl ExpanderApp {
                         }
                         ui.menu_button(tr("var-key"), |ui| {
                             egui::ScrollArea::vertical().max_height(320.0).show(ui, |ui| {
-                                for k in crate::shortcut::Key::VARIABLE_NAMES {
+                                for k in crate::shortcut::Key::variable_names() {
                                     if ui.button(format!("#{{key:{k}}}")).clicked() {
                                         ed.insert(&format!("#{{key:{k}}}"));
                                         ui.close();
@@ -373,18 +374,14 @@ impl ExpanderApp {
             if ed.combo.snippet.is_empty() {
                 ui.label(muted(ui, tr("editor-snippet-empty")).small());
             }
-            let (o, c) = buttons_row(ui, tr("app-ok"), !ed.combo.snippet.is_empty());
-            ok = o || (ui.input(|i| i.modifiers.command && i.key_pressed(egui::Key::Enter)) && !ed.combo.snippet.is_empty());
-            cancel = c;
+            let (ok, cancel) = buttons_row(ui, tr("app-ok"), !ed.combo.snippet.is_empty());
+            (ok || (ui.input(|i| i.modifiers.command && i.key_pressed(egui::Key::Enter)) && !ed.combo.snippet.is_empty()), cancel)
         });
         if self.recording == Some(RecordTarget::SnippetVariable) {
             return true;
         }
-        if cancel || (r.should_close() && !ok) {
-            return false;
-        }
-        if !ok {
-            return true;
+        if answer != Some(true) {
+            return answer.is_none();
         }
         let combo = ed.combo.clone();
         let uuid = combo.uuid;
@@ -415,9 +412,7 @@ impl ExpanderApp {
     }
 
     fn group_editor_ui(&mut self, ctx: &egui::Context, ed: &mut GroupEditor) -> bool {
-        let mut ok = false;
-        let mut cancel = false;
-        let r = modal("group_editor").show(ctx, |ui| {
+        let answer = ok_cancel(ctx, "group_editor", |ui| {
             ui.set_width(420.0);
             ui.heading(if ed.is_new { tr("group-new-title") } else { tr("group-edit-title") });
             ui.add_space(8.0);
@@ -435,15 +430,11 @@ impl ExpanderApp {
             });
             ui.checkbox(&mut ed.group.enabled, tr("app-enabled"));
             let valid = !ed.group.name.trim().is_empty();
-            let (o, c) = buttons_row(ui, tr("app-ok"), valid);
-            ok = o || (valid && ui.input(|i| i.key_pressed(egui::Key::Enter)));
-            cancel = c;
+            let (ok, cancel) = buttons_row(ui, tr("app-ok"), valid);
+            (ok || (valid && ui.input(|i| i.key_pressed(egui::Key::Enter))), cancel)
         });
-        if cancel || (r.should_close() && !ok) {
-            return false;
-        }
-        if !ok {
-            return true;
+        if answer != Some(true) {
+            return answer.is_none();
         }
         let mut g = ed.group.clone();
         g.name = g.name.trim().to_string();
@@ -469,22 +460,15 @@ impl ExpanderApp {
     }
 
     fn confirm_ui(&mut self, ctx: &egui::Context, c: &mut Confirm) -> bool {
-        let mut ok = false;
-        let mut cancel = false;
-        let r = modal("confirm").show(ctx, |ui| {
+        let answer = ok_cancel(ctx, "confirm", |ui| {
             ui.set_max_width(440.0);
             ui.heading(tr("app-confirmation"));
             ui.add_space(6.0);
             ui.label(&c.text);
-            let (o, cl) = buttons_row(ui, tr("app-yes"), true);
-            ok = o;
-            cancel = cl;
+            buttons_row(ui, tr("app-yes"), true)
         });
-        if cancel || (r.should_close() && !ok) {
-            return false;
-        }
-        if !ok {
-            return true;
+        if answer != Some(true) {
+            return answer.is_none();
         }
         match &c.action {
             ConfirmAction::DeleteCombos(ids) => {
@@ -541,10 +525,8 @@ impl ExpanderApp {
 
     fn import_ui(&mut self, ctx: &egui::Context, d: &mut ImportDialog) -> bool {
         let groups: Vec<(Uuid, String)> = self.shared.library.read().groups.iter().map(|g| (g.uuid, g.name.clone())).collect();
-        let mut ok = false;
-        let mut cancel = false;
         let Some(analysis) = d.analysis.as_ref() else { return false };
-        let r = modal("import").show(ctx, |ui| {
+        let answer = ok_cancel(ctx, "import", |ui| {
             ui.set_width(480.0);
             ui.heading(tr("import-title"));
             ui.add_space(4.0);
@@ -575,15 +557,10 @@ impl ExpanderApp {
                 });
             });
             let count = analysis.importable_count(d.policy);
-            let (o, c) = buttons_row(ui, &tr!("import-button", count = count), count > 0);
-            ok = o;
-            cancel = c;
+            buttons_row(ui, &tr!("import-button", count = count), count > 0)
         });
-        if cancel || (r.should_close() && !ok) {
-            return false;
-        }
-        if !ok {
-            return true;
+        if answer != Some(true) {
+            return answer.is_none();
         }
         let analysis = d.analysis.take().unwrap_or_default();
         let n = library::apply_import(&mut self.shared.library.write(), analysis, d.policy, d.group);
@@ -593,10 +570,8 @@ impl ExpanderApp {
     }
 
     fn restore_backup_ui(&mut self, ctx: &egui::Context, d: &mut RestoreBackupDialog) -> bool {
-        let mut ok = false;
-        let mut cancel = false;
         let mut remove_all = false;
-        let r = modal("restore_backup").show(ctx, |ui| {
+        let answer = ok_cancel(ctx, "restore_backup", |ui| {
             ui.set_width(420.0);
             ui.heading(tr("restore-auto-title"));
             ui.add_space(4.0);
@@ -617,18 +592,16 @@ impl ExpanderApp {
                     remove_all = true;
                 }
             }
-            let (o, c) = buttons_row(ui, tr("restore-action"), d.selected.is_some());
-            ok = o;
-            cancel = c;
+            buttons_row(ui, tr("restore-action"), d.selected.is_some())
         });
         if remove_all {
             self.dialog = Some(Dialog::Confirm(Confirm::new(tr("confirm-remove-backups").to_string(), ConfirmAction::RemoveBackups)));
             return false;
         }
-        if cancel || (r.should_close() && !ok) {
-            return false;
+        if answer != Some(true) {
+            return answer.is_none();
         }
-        if ok && let Some(i) = d.selected {
+        if let Some(i) = d.selected {
             let path = d.files[i].0.clone();
             self.dialog = Some(Dialog::Confirm(Confirm::new(tr("confirm-replace-library").to_string(), ConfirmAction::RestoreFrom(path))));
             return false;
@@ -642,9 +615,7 @@ impl ExpanderApp {
             AppListKind::Sensitive => (tr("applist-sensitive-title"), tr("applist-sensitive-help")),
             AppListKind::EmojiExcluded => (tr("applist-emoji-title"), tr("applist-emoji-help")),
         };
-        let mut ok = false;
-        let mut cancel = false;
-        let r = modal("app_list").show(ctx, |ui| {
+        let answer = ok_cancel(ctx, "app_list", |ui| {
             ui.set_width(440.0);
             ui.heading(title);
             ui.add_space(4.0);
@@ -655,15 +626,10 @@ impl ExpanderApp {
             }
             ui.add_space(6.0);
             ui.add(egui::TextEdit::multiline(&mut d.text).font(egui::TextStyle::Monospace).desired_rows(10).desired_width(f32::INFINITY));
-            let (o, c) = buttons_row(ui, tr("app-ok"), true);
-            ok = o;
-            cancel = c;
+            buttons_row(ui, tr("app-ok"), true)
         });
-        if cancel || (r.should_close() && !ok) {
-            return false;
-        }
-        if !ok {
-            return true;
+        if answer != Some(true) {
+            return answer.is_none();
         }
         let patterns: Vec<String> = d.text.lines().map(str::trim).filter(|l| !l.is_empty()).map(str::to_string).collect();
         let list = crate::process_list::ProcessList { patterns };
@@ -677,9 +643,7 @@ impl ExpanderApp {
     }
 
     fn migration_ui(&mut self, ctx: &egui::Context, path: PathBuf, summary: Option<(usize, usize)>) -> bool {
-        let mut ok = false;
-        let mut cancel = false;
-        let r = modal("migration").show(ctx, |ui| {
+        let answer = ok_cancel(ctx, "migration", |ui| {
             ui.set_max_width(460.0);
             ui.heading(tr("migration-title"));
             ui.add_space(6.0);
@@ -688,15 +652,12 @@ impl ExpanderApp {
                 ui.label(RichText::new(tr!("app-status-counts", combos = c, groups = g)).strong());
             }
             ui.label(muted(ui, path.display().to_string()).small());
-            let (o, cl) = buttons_row(ui, tr("import-action"), summary.is_some());
-            ok = o;
-            cancel = cl;
+            buttons_row(ui, tr("import-action"), summary.is_some())
         });
-        if ok {
+        if answer == Some(true) {
             self.replace_library_from(&path);
-            return false;
         }
-        !(cancel || r.should_close())
+        answer.is_none()
     }
 }
 
@@ -724,9 +685,7 @@ fn about_ui(ctx: &egui::Context, shared: &AppShared) -> bool {
             ui.add_space(6.0);
             ui.label(muted(ui, tr!("about-data-folder", path = shared.paths.data_dir.display().to_string())).small());
             ui.add_space(10.0);
-            if ui.add(egui::Button::new(tr("app-ok")).min_size(egui::vec2(90.0, 0.0))).clicked() {
-                close = true;
-            }
+            close = ok_button(ui);
         });
     });
     !(close || r.should_close())
@@ -765,11 +724,7 @@ fn help_ui(ctx: &egui::Context) -> bool {
             });
         });
         ui.add_space(8.0);
-        ui.allocate_ui_with_layout(egui::vec2(ui.available_width(), 30.0), Layout::right_to_left(Align::Center), |ui| {
-            if ui.add(egui::Button::new(tr("app-ok")).min_size(egui::vec2(90.0, 0.0))).clicked() {
-                close = true;
-            }
-        });
+        close = right_aligned(ui, ok_button);
     });
     !(close || r.should_close())
 }
