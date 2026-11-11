@@ -3,6 +3,8 @@
 ## Non ancora pubblicato
 
 - Tolta la tabella riassuntiva (*Strumenti → Crea una tabella riassuntiva*), sia in PDF sia in CSV. L'esportazione delle combo in JSON e CSV resta com'era.
+- `#{key:}` accetta anche i nomi brevi dei tasti (`#{key:pgup}`, `#{key:del}`, `#{key:print}`), gli stessi delle scorciatoie.
+- Meno dipendenze: senza la tabella riassuntiva e senza il supporto ai link (mai usato) il programma si compila con 30 pacchetti in meno (220 → 190 su Windows).
 
 ## 0.2.2 — 10 novembre 2026
 

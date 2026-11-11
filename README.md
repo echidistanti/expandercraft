@@ -171,7 +171,7 @@ Su Linux, dove il programma non compila, i test si eseguono sulla versione Windo
 CARGO_TARGET_X86_64_PC_WINDOWS_GNU_RUNNER=wine cargo test --target x86_64-pc-windows-gnu
 ```
 
-62 test unitari coprono le traduzioni, la lista condivisa tra computer, le preferenze illeggibili, la ricerca delle emoji, il formato dei file, le variabili, i formati di data, i frammenti, il cursore, le corrispondenze e il motore di sostituzione (con tastiera e appunti simulati).
+63 test unitari coprono le traduzioni, la lista condivisa tra computer, le preferenze illeggibili, la ricerca delle emoji, il formato dei file, le variabili, i formati di data, i frammenti, il cursore, le corrispondenze e il motore di sostituzione (con tastiera e appunti simulati).
 
 ## Pubblicare una versione
 
