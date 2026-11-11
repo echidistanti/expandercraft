@@ -138,10 +138,8 @@ impl ExpanderApp {
             }
 
             ui.add_space(8.0);
-            ui.allocate_ui_with_layout(egui::vec2(ui.available_width(), 30.0), Layout::right_to_left(Align::Center), |ui| {
-                if ui.add(egui::Button::new(tr("app-ok")).min_size(egui::vec2(90.0, 0.0))).clicked() {
-                    close = true;
-                }
+            super::dialogs::right_aligned(ui, |ui| {
+                close = super::dialogs::ok_button(ui);
                 ui.with_layout(Layout::left_to_right(Align::Center), |ui| match &d.copied {
                     Some(c) => ui.label(RichText::new(tr!("emoji-list-copied", code = c.as_str())).color(accent)),
                     None => ui.label(muted(ui, tr("emoji-list-click-hint"))),

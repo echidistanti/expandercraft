@@ -29,44 +29,44 @@ macro_rules! tr {
     }};
 }
 
-/// A language the user interface is translated into.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+/// A language the user interface is translated into. The names are the values of the settings file.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub enum Lang {
-    En,
-    It,
-    Fr,
-    Es,
+    English,
+    Italian,
+    French,
+    Spanish,
 }
 
 impl Lang {
-    pub const ALL: [Lang; 4] = [Lang::En, Lang::It, Lang::Fr, Lang::Es];
+    pub const ALL: [Lang; 4] = [Lang::English, Lang::Italian, Lang::French, Lang::Spanish];
 
     /// The BCP 47 language code.
     pub fn code(self) -> &'static str {
         match self {
-            Lang::En => "en",
-            Lang::It => "it",
-            Lang::Fr => "fr",
-            Lang::Es => "es",
+            Lang::English => "en",
+            Lang::Italian => "it",
+            Lang::French => "fr",
+            Lang::Spanish => "es",
         }
     }
 
     /// The name of the language, written in that language.
     pub fn native_name(self) -> &'static str {
         match self {
-            Lang::En => "English",
-            Lang::It => "Italiano",
-            Lang::Fr => "Français",
-            Lang::Es => "Español",
+            Lang::English => "English",
+            Lang::Italian => "Italiano",
+            Lang::French => "Français",
+            Lang::Spanish => "Español",
         }
     }
 
     fn source(self) -> &'static str {
         match self {
-            Lang::En => include_str!("../locales/en.ftl"),
-            Lang::It => include_str!("../locales/it.ftl"),
-            Lang::Fr => include_str!("../locales/fr.ftl"),
-            Lang::Es => include_str!("../locales/es.ftl"),
+            Lang::English => include_str!("../locales/en.ftl"),
+            Lang::Italian => include_str!("../locales/it.ftl"),
+            Lang::French => include_str!("../locales/fr.ftl"),
+            Lang::Spanish => include_str!("../locales/es.ftl"),
         }
     }
 
@@ -78,18 +78,6 @@ impl Lang {
 
     fn index(self) -> usize {
         self as usize
-    }
-}
-
-impl From<Language> for Option<Lang> {
-    fn from(pref: Language) -> Self {
-        match pref {
-            Language::System => None,
-            Language::English => Some(Lang::En),
-            Language::Italian => Some(Lang::It),
-            Language::French => Some(Lang::Fr),
-            Language::Spanish => Some(Lang::Es),
-        }
     }
 }
 
@@ -137,12 +125,15 @@ fn catalog(lang: Lang) -> &'static Catalog {
 
 /// The language matching the system locale, English if it is not translated.
 pub fn system_language() -> Lang {
-    sys_locale::get_locales().find_map(|l| Lang::from_locale(&l)).unwrap_or(Lang::En)
+    sys_locale::get_locales().find_map(|l| Lang::from_locale(&l)).unwrap_or(Lang::English)
 }
 
 /// Select the language of the user interface.
 pub fn set_language(pref: Language) {
-    let lang = Option::<Lang>::from(pref).unwrap_or_else(system_language);
+    let lang = match pref {
+        Language::System => system_language(),
+        Language::Fixed(l) => l,
+    };
     if CURRENT.swap(lang.index() as u8, Ordering::Relaxed) != lang.index() as u8 {
         GENERATION.fetch_add(1, Ordering::Relaxed);
     }
@@ -158,17 +149,6 @@ pub fn generation() -> u64 {
     GENERATION.load(Ordering::Relaxed)
 }
 
-/// A date written out in the language of the user interface ("10 November 2026").
-pub fn long_date(date: chrono::NaiveDate) -> String {
-    let (locale, format) = match current() {
-        Lang::En => (chrono::Locale::en_US, "%B %-d, %Y"),
-        Lang::It => (chrono::Locale::it_IT, "%-d %B %Y"),
-        Lang::Fr => (chrono::Locale::fr_FR, "%-d %B %Y"),
-        Lang::Es => (chrono::Locale::es_ES, "%-d de %B de %Y"),
-    };
-    date.format_localized(format, locale).to_string()
-}
-
 /// Translate a message without arguments.
 pub fn tr(id: &'static str) -> &'static str {
     let lang = current();
@@ -178,7 +158,7 @@ pub fn tr(id: &'static str) -> &'static str {
     }
     let text = cat.format(id, None).or_else(|| {
         log::warn!("message '{id}' missing in {}.ftl", lang.code());
-        (lang != Lang::En).then(|| catalog(Lang::En).format(id, None)).flatten()
+        (lang != Lang::English).then(|| catalog(Lang::English).format(id, None)).flatten()
     });
     let s: &'static str = match text {
         Some(t) => Box::leak(t.into_boxed_str()),
@@ -198,7 +178,7 @@ pub fn tr_args(id: &str, args: &FluentArgs) -> String {
     let lang = current();
     catalog(lang)
         .format(id, Some(args))
-        .or_else(|| (lang != Lang::En).then(|| catalog(Lang::En).format(id, Some(args))).flatten())
+        .or_else(|| (lang != Lang::English).then(|| catalog(Lang::English).format(id, Some(args))).flatten())
         .unwrap_or_else(|| id.to_string())
 }
 
@@ -271,8 +251,8 @@ mod tests {
 
     #[test]
     fn locales_are_complete_and_consistent() {
-        let reference = messages(Lang::En);
-        for lang in [Lang::It, Lang::Fr, Lang::Es] {
+        let reference = messages(Lang::English);
+        for lang in [Lang::Italian, Lang::French, Lang::Spanish] {
             let other = messages(lang);
             let missing: Vec<_> = reference.keys().filter(|k| !other.contains_key(*k)).collect();
             let extra: Vec<_> = other.keys().filter(|k| !reference.contains_key(*k)).collect();
@@ -287,7 +267,7 @@ mod tests {
     /// Every message used in the source code exists, and every message of en.ftl is used.
     #[test]
     fn messages_used_in_source_exist() {
-        let reference = messages(Lang::En);
+        let reference = messages(Lang::English);
         let re_ids = ["tr(\"", "tr!(\""];
         let mut used = BTreeSet::new();
         let src = concat!(env!("CARGO_MANIFEST_DIR"), "/src");
@@ -334,20 +314,20 @@ mod tests {
             a.set("count", count);
             a
         };
-        assert_eq!(tr_in(Lang::En, "msg-combos-imported", Some(&n(1))).unwrap(), "1 combo was imported.");
-        assert_eq!(tr_in(Lang::En, "msg-combos-imported", Some(&n(0))).unwrap(), "0 combos were imported.");
-        assert_eq!(tr_in(Lang::It, "msg-combos-imported", Some(&n(3))).unwrap(), "3 combo importate.");
+        assert_eq!(tr_in(Lang::English, "msg-combos-imported", Some(&n(1))).unwrap(), "1 combo was imported.");
+        assert_eq!(tr_in(Lang::English, "msg-combos-imported", Some(&n(0))).unwrap(), "0 combos were imported.");
+        assert_eq!(tr_in(Lang::Italian, "msg-combos-imported", Some(&n(3))).unwrap(), "3 combo importate.");
         // in French, 0 and 1 are singular
-        assert_eq!(tr_in(Lang::Fr, "msg-combos-imported", Some(&n(0))).unwrap(), "0 combo a été importé.");
-        assert_eq!(tr_in(Lang::Fr, "msg-combos-imported", Some(&n(2))).unwrap(), "2 combos ont été importés.");
-        assert_eq!(tr_in(Lang::Es, "msg-combos-imported", Some(&n(1))).unwrap(), "Se ha importado 1 combo.");
+        assert_eq!(tr_in(Lang::French, "msg-combos-imported", Some(&n(0))).unwrap(), "0 combo a été importé.");
+        assert_eq!(tr_in(Lang::French, "msg-combos-imported", Some(&n(2))).unwrap(), "2 combos ont été importés.");
+        assert_eq!(tr_in(Lang::Spanish, "msg-combos-imported", Some(&n(1))).unwrap(), "Se ha importado 1 combo.");
     }
 
     #[test]
     fn no_isolation_marks_and_french_spacing() {
         let mut a = FluentArgs::new();
         a.set("name", "Work");
-        let s = tr_in(Lang::Fr, "confirm-delete-group", Some(&a)).unwrap();
+        let s = tr_in(Lang::French, "confirm-delete-group", Some(&a)).unwrap();
         assert_eq!(s, "Supprimer le groupe «\u{a0}Work\u{a0}»\u{a0}?");
         assert!(!s.contains('\u{2068}'));
     }
@@ -360,9 +340,9 @@ mod tests {
 
     #[test]
     fn locale_tags() {
-        assert_eq!(Lang::from_locale("fr-CA"), Some(Lang::Fr));
-        assert_eq!(Lang::from_locale("es_ES.UTF-8"), Some(Lang::Es));
-        assert_eq!(Lang::from_locale("IT"), Some(Lang::It));
+        assert_eq!(Lang::from_locale("fr-CA"), Some(Lang::French));
+        assert_eq!(Lang::from_locale("es_ES.UTF-8"), Some(Lang::Spanish));
+        assert_eq!(Lang::from_locale("IT"), Some(Lang::Italian));
         assert_eq!(Lang::from_locale("de-DE"), None);
     }
 }
