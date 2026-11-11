@@ -414,15 +414,21 @@ fn egui_key_to_key(key: egui::Key) -> Option<crate::shortcut::Key> {
     })
 }
 
+/// The icon of the main window and of the combo editor window, drawn once.
+fn window_icon() -> Arc<egui::IconData> {
+    static ICON: std::sync::LazyLock<Arc<egui::IconData>> =
+        std::sync::LazyLock::new(|| Arc::new(egui::IconData { rgba: crate::icon::render_rgba(64, true), width: 64, height: 64 }));
+    ICON.clone()
+}
+
 /// Start the user interface. Blocks until the application quits.
 pub fn run(shared: Arc<AppShared>, ui_rx: Receiver<UiMsg>, start_hidden: bool) -> eframe::Result<()> {
-    let icon = egui::IconData { rgba: crate::icon::render_rgba(64, true), width: 64, height: 64 };
     let mut viewport = egui::ViewportBuilder::default()
         .with_title("ExpanderCraft")
         .with_app_id("expandercraft")
         .with_inner_size([980.0, 640.0])
         .with_min_inner_size([680.0, 420.0])
-        .with_icon(Arc::new(icon));
+        .with_icon(window_icon());
     if start_hidden {
         viewport = viewport.with_position([-20000.0, -20000.0]);
     }
