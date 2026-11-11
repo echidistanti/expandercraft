@@ -123,7 +123,9 @@ impl ExpanderApp {
                 && let Some(path) = crate::paths::beeftext_library_candidates().into_iter().next()
             {
                 // the number of combos and groups, read once (the dialog is drawn many times)
-                let summary = crate::library::Library::load(&path).ok().map(|p| (p.library.combos.len(), p.library.groups.len()));
+                let summary = crate::library::Library::load(&path)
+                    .map(|p| (p.library.combos.len(), p.library.groups.len()))
+                    .map_err(|e| format!("{e:#}"));
                 app.dialog = Some(Dialog::BeeftextMigration(path, summary));
             }
             shared.prefs.write().already_launched = true;
