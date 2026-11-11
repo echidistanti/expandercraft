@@ -246,16 +246,16 @@ fn behavior_tab(ui: &mut egui::Ui, p: &mut Preferences, recording: Option<Record
 
 /// Languages are shown in their own language, so that the user can find theirs.
 fn language_label(l: Language) -> String {
-    match Option::<crate::i18n::Lang>::from(l) {
-        Some(lang) => lang.native_name().to_string(),
-        None => tr!("prefs-system-language", language = crate::i18n::system_language().native_name()),
+    match l {
+        Language::Fixed(lang) => lang.native_name().to_string(),
+        Language::System => tr!("prefs-system-language", language = crate::i18n::system_language().native_name()),
     }
 }
 
 fn appearance_tab(ui: &mut egui::Ui, p: &mut Preferences) {
     section(ui, tr("prefs-section-language"));
     egui::ComboBox::from_id_salt("pref_language").selected_text(language_label(p.language)).width(220.0).show_ui(ui, |ui| {
-        for l in [Language::System, Language::English, Language::Italian, Language::French, Language::Spanish] {
+        for l in std::iter::once(Language::System).chain(crate::i18n::Lang::ALL.map(Language::Fixed)) {
             ui.selectable_value(&mut p.language, l, language_label(l));
         }
     });
