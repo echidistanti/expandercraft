@@ -30,7 +30,7 @@ Equivalenti a Beeftext 15:
 
 ### Compatibilità con Beeftext
 
-ExpanderCraft legge e scrive il formato `comboList.json` di Beeftext (versione 10) e aggiorna automaticamente i file delle versioni 1–9. Al primo avvio, se trova una libreria di Beeftext (`%LOCALAPPDATA%\beeftext.org\Beeftext\comboList.json`), propone di importarla con tutti i gruppi. Un backup di Beeftext si può aprire con *Strumenti → Ripristina la lista delle combo*.
+ExpanderCraft legge e scrive il formato `comboList.json` dell'ultima versione di Beeftext (versione 10). I file nei formati più vecchi (1–9) vanno prima esportati da una Beeftext aggiornata. Al primo avvio, se trova una libreria di Beeftext (`%LOCALAPPDATA%\beeftext.org\Beeftext\comboList.json`), propone di importarla con tutti i gruppi. Un backup di Beeftext si può aprire con *Strumenti → Ripristina la lista delle combo*.
 
 ## Variabili
 
@@ -103,7 +103,7 @@ Al primo avvio vanno concessi i permessi *Accessibilità* e *Monitoraggio input*
 ```
 src/
 ├── main.rs            avvio: percorsi, preferenze, log, istanza singola, thread
-├── library.rs         Combo, Group, Library: formato JSON Beeftext v1–10, CSV, import con conflitti
+├── library.rs         Combo, Group, Library: formato JSON Beeftext v10, CSV, import con conflitti
 ├── variables.rs       valutazione delle variabili (trait VariableHost, testabile)
 ├── fragments.rs       suddivisione in testo/#{key}/#{shortcut}/#{delay}, calcolo di #{cursor}
 ├── qtdate.rs          formati data/ora in stile Qt, spostamenti, nomi localizzati
@@ -171,7 +171,7 @@ Su Linux, dove il programma non compila, i test si eseguono sulla versione Windo
 CARGO_TARGET_X86_64_PC_WINDOWS_GNU_RUNNER=wine cargo test --target x86_64-pc-windows-gnu
 ```
 
-63 test unitari coprono le traduzioni, la lista condivisa tra computer, le preferenze illeggibili, la ricerca delle emoji, il formato dei file, le variabili, i formati di data, i frammenti, il cursore, le corrispondenze e il motore di sostituzione (con tastiera e appunti simulati).
+62 test unitari coprono le traduzioni, la lista condivisa tra computer, le preferenze illeggibili, la ricerca delle emoji, il formato dei file, le variabili, i formati di data, i frammenti, il cursore, le corrispondenze e il motore di sostituzione (con tastiera e appunti simulati).
 
 ## Pubblicare una versione
 
