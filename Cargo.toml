@@ -1,6 +1,6 @@
 [package]
 name = "expandercraft"
-version = "0.2.2"
+version = "0.3.0"
 edition = "2024"
 description = "ExpanderCraft: a cross-platform text expander written in Rust, inspired by Beeftext"
 license = "MIT"
