@@ -1,5 +1,9 @@
 # Novità
 
+## Non ancora pubblicato
+
+- Tolta la tabella riassuntiva (*Strumenti → Crea una tabella riassuntiva*), sia in PDF sia in CSV. L'esportazione delle combo in JSON e CSV resta com'era.
+
 ## 0.2.2 — 10 novembre 2026
 
 - **Sicurezza**: il testo inserito da `#{clipboard}`, `#{input:}`, `#{envVar:}` e `#{powershell:}` non viene più interpretato. Prima un testo copiato con dentro `#{shortcut:Win+R}…#{key:enter}` poteva premere tasti ed eseguire comandi.

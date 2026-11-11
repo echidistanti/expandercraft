@@ -13,7 +13,6 @@
 mod i18n;
 mod app_state;
 mod backup;
-mod cheat_sheet;
 mod emoji;
 mod engine;
 mod fragments;
