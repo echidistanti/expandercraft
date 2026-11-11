@@ -181,7 +181,6 @@ impl AppShared {
             let stamp = file_stamp(&path);
             match Library::load(&path) {
                 Ok(parsed) => {
-                    needs_save = parsed.older_format;
                     if parsed.skipped > 0 {
                         self.startup_errors.lock().push(tr!("msg-invalid-combos-ignored", count = parsed.skipped));
                     }

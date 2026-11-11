@@ -1,8 +1,7 @@
 //! Combos, groups and the combo library.
 //!
-//! The on-disk JSON format is the one used by Beeftext (file format version 10), so that existing
-//! Beeftext libraries, exports and backups can be loaded as-is. Older versions (1 to 9) are upgraded
-//! on load, exactly like Beeftext does.
+//! The on-disk JSON format is the one used by the latest Beeftext (file format version 10), so that
+//! Beeftext libraries, exports and backups can be loaded as-is. Older versions are refused.
 
 use std::collections::HashMap;
 use std::path::Path;
@@ -280,44 +279,23 @@ impl Combo {
         self.keyword.graphemes(true).count()
     }
 
-    fn from_json(obj: &Map<String, Value>, version: i64, groups: &[Group]) -> Result<Self> {
+    fn from_json(obj: &Map<String, Value>, groups: &[Group]) -> Result<Self> {
         let n = now();
-        let uuid = obj.get("uuid").and_then(Value::as_str).and_then(parse_uuid).unwrap_or_else(Uuid::new_v4);
-        let keyword = str_prop(obj, if version >= 2 { "keyword" } else { "comboText" });
-        let mut snippet = str_prop(obj, if version >= 2 { "snippet" } else { "substitutionText" });
-        if obj.get("useHtml").and_then(Value::as_bool).unwrap_or(false) {
-            snippet = html_to_plain_text(&snippet);
-        }
-        let (created_key, modified_key) =
-            if version >= 3 { ("creationDateTime", "modificationDateTime") } else { ("created", "lastModified") };
-        let matching_mode = if version < 9 {
-            if obj.get("useLooseMatch").and_then(Value::as_bool).unwrap_or(false) { MatchingMode::Loose } else { MatchingMode::Default }
-        } else {
-            MatchingMode::from_int(obj.get("matchingMode").and_then(Value::as_i64).unwrap_or(1))
-        };
-        let case_sensitivity = if version < 10 {
-            CaseSensitivity::Default
-        } else {
-            CaseSensitivity::from_int(obj.get("caseSensitivity").and_then(Value::as_i64).unwrap_or(0))
-        };
-        let group = obj.get("group").and_then(Value::as_str).and_then(parse_uuid).filter(|g| groups.iter().any(|x| &x.uuid == g));
-        let mut combo = Self {
-            uuid,
+        let date = |key| obj.get(key).and_then(Value::as_str).and_then(parse_json_date).unwrap_or(n);
+        let combo = Self {
+            uuid: obj.get("uuid").and_then(Value::as_str).and_then(parse_uuid).unwrap_or_else(Uuid::new_v4),
             name: str_prop(obj, "name"),
-            keyword,
-            snippet,
-            description: if version < 10 { String::new() } else { str_prop(obj, "description") },
-            matching_mode,
-            case_sensitivity,
-            group,
-            created: obj.get(created_key).and_then(Value::as_str).and_then(parse_json_date).unwrap_or(n),
-            modified: obj.get(modified_key).and_then(Value::as_str).and_then(parse_json_date).unwrap_or(n),
+            keyword: str_prop(obj, "keyword"),
+            snippet: str_prop(obj, "snippet"),
+            description: str_prop(obj, "description"),
+            matching_mode: MatchingMode::from_int(obj.get("matchingMode").and_then(Value::as_i64).unwrap_or(1)),
+            case_sensitivity: CaseSensitivity::from_int(obj.get("caseSensitivity").and_then(Value::as_i64).unwrap_or(0)),
+            group: obj.get("group").and_then(Value::as_str).and_then(parse_uuid).filter(|g| groups.iter().any(|x| &x.uuid == g)),
+            created: date("creationDateTime"),
+            modified: date("modificationDateTime"),
             last_use: None,
             enabled: obj.get("enabled").and_then(Value::as_bool).unwrap_or(true),
         };
-        if version < FILE_FORMAT_VERSION {
-            combo.touch();
-        }
         if !combo.is_valid() {
             bail!("invalid combo (empty snippet)");
         }
@@ -369,42 +347,6 @@ pub fn parse_uuid(s: &str) -> Option<Uuid> {
     Uuid::parse_str(s.trim().trim_start_matches('{').trim_end_matches('}')).ok().filter(|u| !u.is_nil())
 }
 
-/// Minimal HTML to plain text conversion, used for the rich text combos of old Beeftext versions.
-pub fn html_to_plain_text(html: &str) -> String {
-    let body = match (html.find("<body"), html.rfind("</body>")) {
-        (Some(start), Some(end)) if start < end => &html[start..end],
-        _ => html,
-    };
-    let mut out = String::new();
-    let mut in_tag = false;
-    let mut tag = String::new();
-    for c in body.chars() {
-        match (in_tag, c) {
-            (false, '<') => {
-                in_tag = true;
-                tag.clear();
-            }
-            (true, '>') => {
-                in_tag = false;
-                let t = tag.trim().to_lowercase();
-                if (t.starts_with("br") || t.starts_with("/p") || t.starts_with("/div") || t.starts_with("/li")) && !out.is_empty() {
-                    out.push('\n');
-                }
-            }
-            (true, c) => tag.push(c),
-            (false, c) => out.push(c),
-        }
-    }
-    let out = out
-        .replace("&nbsp;", " ")
-        .replace("&lt;", "<")
-        .replace("&gt;", ">")
-        .replace("&quot;", "\"")
-        .replace("&#39;", "'")
-        .replace("&amp;", "&");
-    out.trim_matches('\n').trim_start_matches('\r').to_string()
-}
-
 // ---------------------------------------------------------------------------------------------------------------------
 // Library
 // ---------------------------------------------------------------------------------------------------------------------
@@ -418,7 +360,6 @@ pub struct Library {
 /// The result of parsing a library file.
 pub struct ParsedLibrary {
     pub library: Library,
-    pub older_format: bool,
     pub skipped: usize,
 }
 
@@ -505,15 +446,16 @@ impl Library {
         if version > FILE_FORMAT_VERSION {
             bail!(tr("error-newer-version"));
         }
+        if version < FILE_FORMAT_VERSION {
+            bail!(tr!("error-older-version", version = version));
+        }
         let mut library = Library::default();
-        if version >= 3 {
-            let groups = root.get("groups").and_then(Value::as_array).ok_or_else(|| anyhow!(tr("error-invalid-groups")))?;
-            for g in groups {
-                let obj = g.as_object().ok_or_else(|| anyhow!(tr("error-invalid-group")))?;
-                let group = Group::from_json(obj)?;
-                if library.group(&group.uuid).is_none() {
-                    library.groups.push(group);
-                }
+        let groups = root.get("groups").and_then(Value::as_array).ok_or_else(|| anyhow!(tr("error-invalid-groups")))?;
+        for g in groups {
+            let obj = g.as_object().ok_or_else(|| anyhow!(tr("error-invalid-group")))?;
+            let group = Group::from_json(obj)?;
+            if library.group(&group.uuid).is_none() {
+                library.groups.push(group);
             }
         }
         let combos = root.get("combos").and_then(Value::as_array).ok_or_else(|| anyhow!(tr("error-invalid-combos")))?;
@@ -523,7 +465,7 @@ impl Library {
                 skipped += 1;
                 continue;
             };
-            match Combo::from_json(obj, version, &library.groups) {
+            match Combo::from_json(obj, &library.groups) {
                 Ok(mut combo) => {
                     if library.combo(&combo.uuid).is_some() {
                         combo.uuid = Uuid::new_v4();
@@ -536,7 +478,7 @@ impl Library {
                 }
             }
         }
-        Ok(ParsedLibrary { library, older_format: version < FILE_FORMAT_VERSION, skipped })
+        Ok(ParsedLibrary { library, skipped })
     }
 
     pub fn load(path: &Path) -> Result<ParsedLibrary> {
@@ -761,7 +703,6 @@ mod tests {
     #[test]
     fn parse_beeftext_v10() {
         let p = Library::from_json_str(BEEFTEXT_V10).unwrap();
-        assert!(!p.older_format);
         assert_eq!(p.library.groups.len(), 1);
         assert_eq!(p.library.combos.len(), 2);
         let c = &p.library.combos[0];
@@ -788,21 +729,10 @@ mod tests {
     }
 
     #[test]
-    fn parse_old_format() {
-        let v1 = r#"{"fileFormatVersion": 1, "combos": [
-            {"uuid": "{8c1b4a2e-1111-4c5f-9f3a-7a4b2c3d4e5f}", "name": "x", "comboText": "kw", "substitutionText": "<html><body><p>Hello &amp; bye</p></body></html>",
-             "useHtml": true, "created": "2018-01-01T10:00:00", "lastModified": "2018-01-01T10:00:00", "useLooseMatch": true}]}"#;
-        let p = Library::from_json_str(v1).unwrap();
-        assert!(p.older_format);
-        let c = &p.library.combos[0];
-        assert_eq!(c.keyword, "kw");
-        assert_eq!(c.snippet, "Hello & bye");
-        assert_eq!(c.matching_mode, MatchingMode::Loose);
-    }
-
-    #[test]
-    fn reject_newer_format() {
+    fn reject_other_formats() {
         assert!(Library::from_json_str(r#"{"fileFormatVersion": 11, "combos": [], "groups": []}"#).is_err());
+        let old = Library::from_json_str(r#"{"fileFormatVersion": 9, "combos": [], "groups": []}"#).err().unwrap();
+        assert!(old.to_string().contains('9'), "{old}");
     }
 
     #[test]

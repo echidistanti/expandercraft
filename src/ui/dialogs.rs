@@ -19,8 +19,8 @@ pub enum Dialog {
     Import(ImportDialog),
     RestoreBackup(RestoreBackupDialog),
     AppList(AppListEditor),
-    /// The path of the Beeftext list, and its number of combos and groups (None if it cannot be read).
-    BeeftextMigration(PathBuf, Option<(usize, usize)>),
+    /// The path of the Beeftext list, and its number of combos and groups, or why it cannot be read.
+    BeeftextMigration(PathBuf, Result<(usize, usize), String>),
     About,
     Help,
     EmojiList(super::emoji_list::EmojiListDialog),
@@ -216,7 +216,7 @@ impl ExpanderApp {
             Dialog::Import(d) => self.import_ui(ctx, d),
             Dialog::RestoreBackup(d) => self.restore_backup_ui(ctx, d),
             Dialog::AppList(d) => self.app_list_ui(ctx, d),
-            Dialog::BeeftextMigration(p, summary) => self.migration_ui(ctx, p.clone(), *summary),
+            Dialog::BeeftextMigration(p, summary) => self.migration_ui(ctx, p.clone(), summary),
             Dialog::About => about_ui(ctx, &self.shared),
             Dialog::Help => help_ui(ctx),
             Dialog::EmojiList(d) => self.emoji_list_ui(ctx, d),
@@ -642,17 +642,19 @@ impl ExpanderApp {
         false
     }
 
-    fn migration_ui(&mut self, ctx: &egui::Context, path: PathBuf, summary: Option<(usize, usize)>) -> bool {
+    fn migration_ui(&mut self, ctx: &egui::Context, path: PathBuf, summary: &Result<(usize, usize), String>) -> bool {
         let answer = ok_cancel(ctx, "migration", |ui| {
             ui.set_max_width(460.0);
             ui.heading(tr("migration-title"));
             ui.add_space(6.0);
             ui.label(tr("migration-text"));
-            if let Some((c, g)) = summary {
-                ui.label(RichText::new(tr!("app-status-counts", combos = c, groups = g)).strong());
-            }
+            match summary {
+                Ok((c, g)) => ui.label(RichText::new(tr!("app-status-counts", combos = *c, groups = *g)).strong()),
+                // why it cannot be read: for an old Beeftext format, to export it from an up-to-date Beeftext
+                Err(e) => ui.label(RichText::new(e).color(style::WARNING)),
+            };
             ui.label(muted(ui, path.display().to_string()).small());
-            buttons_row(ui, tr("import-action"), summary.is_some())
+            buttons_row(ui, tr("import-action"), summary.is_ok())
         });
         if answer == Some(true) {
             self.replace_library_from(&path);
