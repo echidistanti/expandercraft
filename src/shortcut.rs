@@ -49,135 +49,22 @@ impl Key {
         matches!(self, Key::Meta | Key::Control | Key::Alt | Key::Shift | Key::CapsLock)
     }
 
-    /// The names accepted by the `#{key:<name>}` variable (case-insensitive), as in Beeftext.
+    /// The key named in a `#{key:<name>}` variable (case-insensitive), as in Beeftext.
     pub fn from_variable_name(name: &str) -> Option<Key> {
         let n = name.to_lowercase();
-        let k = match n.as_str() {
-            "space" => Key::Space,
-            "tab" => Key::Tab,
-            "enter" | "return" => Key::Enter,
-            "insert" => Key::Insert,
-            "delete" => Key::Delete,
-            "backspace" => Key::Backspace,
-            "home" => Key::Home,
-            "end" => Key::End,
-            "pageup" => Key::PageUp,
-            "pagedown" => Key::PageDown,
-            "up" => Key::Up,
-            "down" => Key::Down,
-            "left" => Key::Left,
-            "right" => Key::Right,
-            "escape" | "esc" => Key::Escape,
-            "printscreen" => Key::PrintScreen,
-            "pause" => Key::Pause,
-            "numlock" => Key::NumLock,
-            "volumemute" => Key::VolumeMute,
-            "volumeup" => Key::VolumeUp,
-            "volumedown" => Key::VolumeDown,
-            "medianexttrack" => Key::MediaNext,
-            "mediaprevioustrack" => Key::MediaPrevious,
-            "mediastop" => Key::MediaStop,
-            "mediaplaypause" => Key::MediaPlayPause,
-            "mediaselect" => Key::MediaSelect,
-            "windows" | "meta" | "command" | "super" => Key::Meta,
-            "control" | "ctrl" => Key::Control,
-            "alt" => Key::Alt,
-            "shift" => Key::Shift,
-            _ => {
-                if let Some(num) = n.strip_prefix('f')
-                    && let Ok(i) = num.parse::<u8>()
-                    && (1..=24).contains(&i)
-                {
-                    return Some(Key::F(i));
-                }
-                return None;
-            }
-        };
-        Some(k)
+        f_key(&n).or_else(|| named_key(&n, true))
     }
 
-    /// The list of names shown in the "Insert variable" menu.
-    pub const VARIABLE_NAMES: &'static [&'static str] = &[
-        "space",
-        "tab",
-        "enter",
-        "backspace",
-        "insert",
-        "delete",
-        "home",
-        "end",
-        "pageUp",
-        "pageDown",
-        "up",
-        "down",
-        "left",
-        "right",
-        "escape",
-        "printScreen",
-        "pause",
-        "numLock",
-        "volumeMute",
-        "volumeUp",
-        "volumeDown",
-        "mediaNextTrack",
-        "mediaPreviousTrack",
-        "mediaStop",
-        "mediaPlayPause",
-        "mediaSelect",
-        "windows",
-        "control",
-        "alt",
-        "shift",
-        "f1",
-        "f2",
-        "f3",
-        "f4",
-        "f5",
-        "f6",
-        "f7",
-        "f8",
-        "f9",
-        "f10",
-        "f11",
-        "f12",
-    ];
+    /// The names shown in the "Insert variable" menu.
+    pub fn variable_names() -> impl Iterator<Item = String> {
+        NAMED_KEYS.iter().filter(|e| !e.2.is_empty()).map(|e| e.2.to_string()).chain((1..=12).map(|i| format!("f{i}")))
+    }
 
     pub fn display_name(self) -> String {
         match self {
             Key::Char(c) => c.to_uppercase().to_string(),
             Key::F(n) => format!("F{n}"),
-            Key::Enter => "Enter".into(),
-            Key::Space => "Space".into(),
-            Key::Tab => "Tab".into(),
-            Key::Backspace => "Backspace".into(),
-            Key::Escape => "Esc".into(),
-            Key::Insert => "Ins".into(),
-            Key::Delete => "Del".into(),
-            Key::Home => "Home".into(),
-            Key::End => "End".into(),
-            Key::PageUp => "PgUp".into(),
-            Key::PageDown => "PgDown".into(),
-            Key::Left => "Left".into(),
-            Key::Right => "Right".into(),
-            Key::Up => "Up".into(),
-            Key::Down => "Down".into(),
-            Key::PrintScreen => "Print".into(),
-            Key::Pause => "Pause".into(),
-            Key::NumLock => "NumLock".into(),
-            Key::CapsLock => "CapsLock".into(),
-            Key::ScrollLock => "ScrollLock".into(),
-            Key::VolumeMute => "VolumeMute".into(),
-            Key::VolumeUp => "VolumeUp".into(),
-            Key::VolumeDown => "VolumeDown".into(),
-            Key::MediaNext => "MediaNext".into(),
-            Key::MediaPrevious => "MediaPrevious".into(),
-            Key::MediaStop => "MediaStop".into(),
-            Key::MediaPlayPause => "MediaPlay".into(),
-            Key::MediaSelect => "MediaSelect".into(),
-            Key::Meta => meta_name().into(),
-            Key::Control => "Ctrl".into(),
-            Key::Alt => "Alt".into(),
-            Key::Shift => "Shift".into(),
+            k => NAMED_KEYS.iter().find(|e| e.0 == k).map(|e| e.1).unwrap_or_default().into(),
         }
     }
 
@@ -205,62 +92,81 @@ impl Key {
         crate::i18n::tr(id).to_string()
     }
 
+    /// The key of a shortcut written in the settings file or in a `#{shortcut:}` variable (case-insensitive).
     pub fn from_display_name(s: &str) -> Option<Key> {
         let l = s.trim().to_lowercase();
-        let k = match l.as_str() {
-            "enter" | "return" => Key::Enter,
-            "space" => Key::Space,
-            "tab" => Key::Tab,
-            "backspace" => Key::Backspace,
-            "esc" | "escape" => Key::Escape,
-            "ins" | "insert" => Key::Insert,
-            "del" | "delete" => Key::Delete,
-            "home" => Key::Home,
-            "end" => Key::End,
-            "pgup" | "pageup" => Key::PageUp,
-            "pgdown" | "pgdn" | "pagedown" => Key::PageDown,
-            "left" => Key::Left,
-            "right" => Key::Right,
-            "up" => Key::Up,
-            "down" => Key::Down,
-            "print" | "printscreen" => Key::PrintScreen,
-            "pause" => Key::Pause,
-            "numlock" => Key::NumLock,
-            "scrolllock" => Key::ScrollLock,
-            "volumemute" => Key::VolumeMute,
-            "volumeup" => Key::VolumeUp,
-            "volumedown" => Key::VolumeDown,
-            "medianext" => Key::MediaNext,
-            "mediaprevious" => Key::MediaPrevious,
-            "mediastop" => Key::MediaStop,
-            "mediaplay" => Key::MediaPlayPause,
-            "mediaselect" => Key::MediaSelect,
-            _ => {
-                if let Some(num) = l.strip_prefix('f')
-                    && let Ok(i) = num.parse::<u8>()
-                    && (1..=24).contains(&i)
-                {
-                    return Some(Key::F(i));
-                }
-                let mut chars = s.trim().chars();
-                return match (chars.next(), chars.next()) {
-                    (Some(c), None) => Some(Key::Char(c.to_uppercase().next().unwrap_or(c))),
-                    _ => None,
-                };
-            }
-        };
-        Some(k)
+        if let Some(k) = f_key(&l).or_else(|| named_key(&l, false)) {
+            return Some(k);
+        }
+        let mut chars = s.trim().chars();
+        match (chars.next(), chars.next()) {
+            (Some(c), None) => Some(Key::Char(c.to_uppercase().next().unwrap_or(c))),
+            _ => None,
+        }
     }
 }
 
-fn meta_name() -> &'static str {
-    if cfg!(target_os = "macos") {
-        "Cmd"
-    } else if cfg!(windows) {
-        "Win"
-    } else {
-        "Super"
-    }
+const META_NAME: &str = if cfg!(target_os = "macos") {
+    "Cmd"
+} else if cfg!(windows) {
+    "Win"
+} else {
+    "Super"
+};
+
+/// Every key with a name: (key, name shown and written in the settings, name in `#{key:}` variables, other
+/// accepted names). All the names are accepted in both places, compared in lowercase. The menu lists the keys
+/// in this order.
+const NAMED_KEYS: &[(Key, &str, &str, &[&str])] = &[
+    (Key::Space, "Space", "space", &[]),
+    (Key::Tab, "Tab", "tab", &[]),
+    (Key::Enter, "Enter", "enter", &["return"]),
+    (Key::Backspace, "Backspace", "backspace", &[]),
+    (Key::Insert, "Ins", "insert", &[]),
+    (Key::Delete, "Del", "delete", &[]),
+    (Key::Home, "Home", "home", &[]),
+    (Key::End, "End", "end", &[]),
+    (Key::PageUp, "PgUp", "pageUp", &[]),
+    (Key::PageDown, "PgDown", "pageDown", &["pgdn"]),
+    (Key::Up, "Up", "up", &[]),
+    (Key::Down, "Down", "down", &[]),
+    (Key::Left, "Left", "left", &[]),
+    (Key::Right, "Right", "right", &[]),
+    (Key::Escape, "Esc", "escape", &[]),
+    (Key::PrintScreen, "Print", "printScreen", &[]),
+    (Key::Pause, "Pause", "pause", &[]),
+    (Key::NumLock, "NumLock", "numLock", &[]),
+    (Key::CapsLock, "CapsLock", "", &[]),
+    (Key::ScrollLock, "ScrollLock", "", &[]),
+    (Key::VolumeMute, "VolumeMute", "volumeMute", &[]),
+    (Key::VolumeUp, "VolumeUp", "volumeUp", &[]),
+    (Key::VolumeDown, "VolumeDown", "volumeDown", &[]),
+    (Key::MediaNext, "MediaNext", "mediaNextTrack", &[]),
+    (Key::MediaPrevious, "MediaPrevious", "mediaPreviousTrack", &[]),
+    (Key::MediaStop, "MediaStop", "mediaStop", &[]),
+    (Key::MediaPlayPause, "MediaPlay", "mediaPlayPause", &[]),
+    (Key::MediaSelect, "MediaSelect", "mediaSelect", &[]),
+    (Key::Meta, META_NAME, "windows", &["meta", "command", "super"]),
+    (Key::Control, "Ctrl", "control", &["ctrl"]),
+    (Key::Alt, "Alt", "alt", &[]),
+    (Key::Shift, "Shift", "shift", &[]),
+];
+
+/// `name` must be in lowercase. A shortcut cannot have a modifier as its key: `allow_modifiers` is false for them.
+fn named_key(name: &str, allow_modifiers: bool) -> Option<Key> {
+    NAMED_KEYS
+        .iter()
+        .filter(|e| allow_modifiers || !e.0.is_modifier())
+        .find(|(_, shown, variable, others)| {
+            shown.eq_ignore_ascii_case(name) || variable.eq_ignore_ascii_case(name) || others.contains(&name)
+        })
+        .map(|e| e.0)
+}
+
+/// F1 to F24, from a lowercase name.
+fn f_key(name: &str) -> Option<Key> {
+    let i: u8 = name.strip_prefix('f')?.parse().ok()?;
+    (1..=24).contains(&i).then_some(Key::F(i))
 }
 
 /// A keyboard shortcut. A valid shortcut has at least one of Ctrl, Alt or Meta, and a non-modifier key.
@@ -354,7 +260,7 @@ impl fmt::Display for Shortcut {
             f.write_str("Shift+")?;
         }
         if self.meta {
-            write!(f, "{}+", meta_name())?;
+            write!(f, "{META_NAME}+")?;
         }
         f.write_str(&self.key.display_name())
     }
@@ -414,6 +320,11 @@ mod tests {
         assert!(Shortcut::parse("Ctrl+Foo").is_none());
         assert!(Shortcut::parse("Hyper+A").is_none());
         assert!(!Shortcut::parse("Shift+A").unwrap().is_valid());
+        // what is written is read back, for every key
+        for key in NAMED_KEYS.iter().map(|e| e.0).filter(|k| !k.is_modifier()).chain([Key::F(24), Key::Char('+')]) {
+            let sc = Shortcut::new(true, false, false, false, key);
+            assert_eq!(Shortcut::parse(&sc.to_string()), Some(sc), "{sc}");
+        }
     }
 
     #[test]
@@ -422,8 +333,15 @@ mod tests {
         assert_eq!(Key::from_variable_name("F12"), Some(Key::F(12)));
         assert_eq!(Key::from_variable_name("f25"), None);
         assert_eq!(Key::from_variable_name("insert"), Some(Key::Insert));
-        for n in Key::VARIABLE_NAMES {
-            assert!(Key::from_variable_name(n).is_some(), "{n}");
+        for n in Key::variable_names() {
+            assert!(Key::from_variable_name(&n).is_some(), "{n}");
         }
+        assert_eq!(Key::variable_names().count(), 42);
+        // the names of the other place are accepted too, but a modifier is never the key of a shortcut
+        assert_eq!(Key::from_variable_name("pgup"), Some(Key::PageUp));
+        assert_eq!(Key::from_display_name("mediaPlayPause"), Some(Key::MediaPlayPause));
+        assert_eq!(Key::from_variable_name("command"), Some(Key::Meta));
+        assert_eq!(Key::from_display_name("ctrl"), None);
+        assert!(Shortcut::parse("Ctrl+CapsLock").is_none());
     }
 }
