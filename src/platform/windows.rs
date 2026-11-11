@@ -273,110 +273,86 @@ unsafe fn translate_key(info: &KBDLLHOOKSTRUCT, ctrl: bool, alt: bool, shift: bo
     }
 }
 
+/// The virtual keys of the named keys, in both directions: a key is sent with its first virtual key. The numpad
+/// operators are only read (a `Key::Char` is sent with the key of the current layout, see [`key_to_vk`]).
+const VK_KEYS: &[(u16, Key)] = &[
+    (VK_RETURN, Key::Enter),
+    (VK_SPACE, Key::Space),
+    (VK_TAB, Key::Tab),
+    (VK_BACK, Key::Backspace),
+    (VK_ESCAPE, Key::Escape),
+    (VK_INSERT, Key::Insert),
+    (VK_DELETE, Key::Delete),
+    (VK_HOME, Key::Home),
+    (VK_END, Key::End),
+    (VK_PRIOR, Key::PageUp),
+    (VK_NEXT, Key::PageDown),
+    (VK_LEFT, Key::Left),
+    (VK_RIGHT, Key::Right),
+    (VK_UP, Key::Up),
+    (VK_DOWN, Key::Down),
+    (VK_SNAPSHOT, Key::PrintScreen),
+    (VK_PAUSE, Key::Pause),
+    (VK_NUMLOCK, Key::NumLock),
+    (VK_SCROLL, Key::ScrollLock),
+    (VK_CAPITAL, Key::CapsLock),
+    (VK_VOLUME_MUTE, Key::VolumeMute),
+    (VK_VOLUME_UP, Key::VolumeUp),
+    (VK_VOLUME_DOWN, Key::VolumeDown),
+    (VK_MEDIA_NEXT_TRACK, Key::MediaNext),
+    (VK_MEDIA_PREV_TRACK, Key::MediaPrevious),
+    (VK_MEDIA_STOP, Key::MediaStop),
+    (VK_MEDIA_PLAY_PAUSE, Key::MediaPlayPause),
+    (VK_LAUNCH_MEDIA_SELECT, Key::MediaSelect),
+    (VK_LWIN, Key::Meta),
+    (VK_RWIN, Key::Meta),
+    (VK_CONTROL, Key::Control),
+    (VK_LCONTROL, Key::Control),
+    (VK_RCONTROL, Key::Control),
+    (VK_LMENU, Key::Alt),
+    (VK_MENU, Key::Alt),
+    (VK_RMENU, Key::Alt),
+    (VK_SHIFT, Key::Shift),
+    (VK_LSHIFT, Key::Shift),
+    (VK_RSHIFT, Key::Shift),
+    (VK_ADD, Key::Char('+')),
+    (VK_SUBTRACT, Key::Char('-')),
+    (VK_MULTIPLY, Key::Char('*')),
+    (VK_DIVIDE, Key::Char('/')),
+    (VK_DECIMAL, Key::Char('.')),
+];
+
 fn vk_to_key(vk: u16) -> Option<Key> {
-    Some(match vk {
-        0x41..=0x5A | 0x30..=0x39 => Key::Char(vk as u8 as char),
-        VK_NUMPAD0..=VK_NUMPAD9 => Key::Char((b'0' + (vk - VK_NUMPAD0) as u8) as char),
-        VK_F1..=VK_F24 => Key::F((vk - VK_F1 + 1) as u8),
-        VK_RETURN => Key::Enter,
-        VK_SPACE => Key::Space,
-        VK_TAB => Key::Tab,
-        VK_BACK => Key::Backspace,
-        VK_ESCAPE => Key::Escape,
-        VK_INSERT => Key::Insert,
-        VK_DELETE => Key::Delete,
-        VK_HOME => Key::Home,
-        VK_END => Key::End,
-        VK_PRIOR => Key::PageUp,
-        VK_NEXT => Key::PageDown,
-        VK_LEFT => Key::Left,
-        VK_RIGHT => Key::Right,
-        VK_UP => Key::Up,
-        VK_DOWN => Key::Down,
-        VK_SNAPSHOT => Key::PrintScreen,
-        VK_PAUSE => Key::Pause,
-        VK_NUMLOCK => Key::NumLock,
-        VK_SCROLL => Key::ScrollLock,
-        VK_CAPITAL => Key::CapsLock,
-        VK_VOLUME_MUTE => Key::VolumeMute,
-        VK_VOLUME_UP => Key::VolumeUp,
-        VK_VOLUME_DOWN => Key::VolumeDown,
-        VK_MEDIA_NEXT_TRACK => Key::MediaNext,
-        VK_MEDIA_PREV_TRACK => Key::MediaPrevious,
-        VK_MEDIA_STOP => Key::MediaStop,
-        VK_MEDIA_PLAY_PAUSE => Key::MediaPlayPause,
-        VK_LAUNCH_MEDIA_SELECT => Key::MediaSelect,
-        VK_LWIN | VK_RWIN => Key::Meta,
-        VK_CONTROL | VK_LCONTROL | VK_RCONTROL => Key::Control,
-        VK_MENU | VK_LMENU | VK_RMENU => Key::Alt,
-        VK_SHIFT | VK_LSHIFT | VK_RSHIFT => Key::Shift,
-        VK_ADD => Key::Char('+'),
-        VK_SUBTRACT => Key::Char('-'),
-        VK_MULTIPLY => Key::Char('*'),
-        VK_DIVIDE => Key::Char('/'),
-        VK_DECIMAL => Key::Char('.'),
-        _ => {
+    match vk {
+        0x41..=0x5A | 0x30..=0x39 => Some(Key::Char(vk as u8 as char)),
+        VK_NUMPAD0..=VK_NUMPAD9 => Some(Key::Char((b'0' + (vk - VK_NUMPAD0) as u8) as char)),
+        VK_F1..=VK_F24 => Some(Key::F((vk - VK_F1 + 1) as u8)),
+        _ => VK_KEYS.iter().find(|(v, _)| *v == vk).map(|(_, k)| *k).or_else(|| {
             // OEM keys: use the character of the current layout
             let c = unsafe { MapVirtualKeyW(vk as u32, MAPVK_VK_TO_CHAR) } & 0x7FFF;
             let c = char::from_u32(c).filter(|c| !c.is_control() && *c != '\0')?;
-            Key::Char(c.to_uppercase().next().unwrap_or(c))
-        }
-    })
+            Some(Key::Char(c.to_uppercase().next().unwrap_or(c)))
+        }),
+    }
 }
 
 fn key_to_vk(key: Key) -> Option<u16> {
-    Some(match key {
+    match key {
         Key::Char(c) => {
             let u = c.to_ascii_uppercase();
             if u.is_ascii_uppercase() || u.is_ascii_digit() {
-                u as u16
-            } else {
-                let hwnd = unsafe { GetForegroundWindow() };
-                let hkl =
-                    unsafe { GetKeyboardLayout(if hwnd.is_null() { 0 } else { GetWindowThreadProcessId(hwnd, std::ptr::null_mut()) }) };
-                let mut buf = [0u16; 2];
-                let unit = c.encode_utf16(&mut buf)[0];
-                let r = unsafe { VkKeyScanExW(unit, hkl) };
-                if r == -1 {
-                    return None;
-                }
-                (r as u16) & 0xFF
+                return Some(u as u16);
             }
+            let hwnd = unsafe { GetForegroundWindow() };
+            let hkl = unsafe { GetKeyboardLayout(if hwnd.is_null() { 0 } else { GetWindowThreadProcessId(hwnd, std::ptr::null_mut()) }) };
+            let mut buf = [0u16; 2];
+            let unit = c.encode_utf16(&mut buf)[0];
+            let r = unsafe { VkKeyScanExW(unit, hkl) };
+            (r != -1).then_some((r as u16) & 0xFF)
         }
-        Key::F(n) => VK_F1 + (n.clamp(1, 24) as u16) - 1,
-        Key::Enter => VK_RETURN,
-        Key::Space => VK_SPACE,
-        Key::Tab => VK_TAB,
-        Key::Backspace => VK_BACK,
-        Key::Escape => VK_ESCAPE,
-        Key::Insert => VK_INSERT,
-        Key::Delete => VK_DELETE,
-        Key::Home => VK_HOME,
-        Key::End => VK_END,
-        Key::PageUp => VK_PRIOR,
-        Key::PageDown => VK_NEXT,
-        Key::Left => VK_LEFT,
-        Key::Right => VK_RIGHT,
-        Key::Up => VK_UP,
-        Key::Down => VK_DOWN,
-        Key::PrintScreen => VK_SNAPSHOT,
-        Key::Pause => VK_PAUSE,
-        Key::NumLock => VK_NUMLOCK,
-        Key::CapsLock => VK_CAPITAL,
-        Key::ScrollLock => VK_SCROLL,
-        Key::VolumeMute => VK_VOLUME_MUTE,
-        Key::VolumeUp => VK_VOLUME_UP,
-        Key::VolumeDown => VK_VOLUME_DOWN,
-        Key::MediaNext => VK_MEDIA_NEXT_TRACK,
-        Key::MediaPrevious => VK_MEDIA_PREV_TRACK,
-        Key::MediaStop => VK_MEDIA_STOP,
-        Key::MediaPlayPause => VK_MEDIA_PLAY_PAUSE,
-        Key::MediaSelect => VK_LAUNCH_MEDIA_SELECT,
-        Key::Meta => VK_LWIN,
-        Key::Control => VK_CONTROL,
-        Key::Alt => VK_LMENU,
-        Key::Shift => VK_SHIFT,
-    })
+        Key::F(n) => Some(VK_F1 + (n.clamp(1, 24) as u16) - 1),
+        k => VK_KEYS.iter().find(|(_, x)| *x == k).map(|(v, _)| *v),
+    }
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -1035,5 +1011,25 @@ pub fn acquire_single_instance(_socket: &std::path::Path, on_show_request: impl 
         }
         // the mutex handle is intentionally never closed: it lives as long as the process
         true
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn virtual_keys_both_ways() {
+        // the modifiers are sent with the same virtual keys as before the table
+        assert_eq!(key_to_vk(Key::Meta), Some(VK_LWIN));
+        assert_eq!(key_to_vk(Key::Control), Some(VK_CONTROL));
+        assert_eq!(key_to_vk(Key::Alt), Some(VK_LMENU));
+        assert_eq!(key_to_vk(Key::Shift), Some(VK_SHIFT));
+        for (vk, key) in VK_KEYS.iter().filter(|(_, k)| !matches!(k, Key::Char(_))) {
+            assert_eq!(vk_to_key(*vk), Some(*key));
+            assert_eq!(key_to_vk(*key).and_then(vk_to_key), Some(*key));
+        }
+        assert_eq!(vk_to_key(VK_ADD), Some(Key::Char('+')));
+        assert_eq!((vk_to_key(VK_F1 + 4), key_to_vk(Key::F(5))), (Some(Key::F(5)), Some(VK_F1 + 4)));
     }
 }
