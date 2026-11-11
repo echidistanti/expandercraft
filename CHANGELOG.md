@@ -1,5 +1,9 @@
 # Novità
 
+## Non ancora pubblicato
+
+- L'editor delle combo (nuova combo e modifica) si apre in una finestra a sé invece che sopra la finestra principale. La principale resta oscurata finché l'editor è aperto; un clic su di essa riporta l'editor in primo piano.
+
 ## 0.4.0 — 11 novembre 2026
 
 - Si leggono solo i file nel formato dell'ultima Beeftext (versione 10, lo stesso che ExpanderCraft ha sempre scritto). I formati 1–9 delle Beeftext più vecchie non vengono più convertiti, e con loro se ne va la conversione degli snippet in HTML: un file del genere va prima esportato da una Beeftext aggiornata, e anche la finestra di migrazione del primo avvio ora lo dice invece di disattivare il pulsante senza spiegazioni.
