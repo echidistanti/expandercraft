@@ -204,6 +204,37 @@ fn ok_cancel(ctx: &egui::Context, id: &str, body: impl FnOnce(&mut egui::Ui) -> 
     if cancel || (r.should_close() && !ok) { Some(false) } else { ok.then_some(true) }
 }
 
+/// Like [`ok_cancel`], in a native window of its own. The main window stays dimmed and blocked as under a modal; a
+/// click on it brings the window back to the front.
+fn ok_cancel_window(
+    ctx: &egui::Context,
+    id: &str,
+    title: &str,
+    size: egui::Vec2,
+    mut body: impl FnMut(&mut egui::Ui) -> (bool, bool),
+) -> Option<bool> {
+    let viewport = egui::ViewportId::from_hash_of(id);
+    if modal(id).frame(egui::Frame::NONE).show(ctx, |_| {}).backdrop_response.clicked() {
+        ctx.send_viewport_cmd_to(viewport, egui::ViewportCommand::Focus);
+    }
+    let mut builder = egui::ViewportBuilder::default()
+        .with_title(title)
+        .with_inner_size(size)
+        .with_min_inner_size([520.0, 460.0])
+        .with_icon(super::window_icon())
+        .with_active(true);
+    if let Some(pos) = super::centered_position(ctx, size) {
+        builder = builder.with_position(pos);
+    }
+    ctx.show_viewport_immediate(viewport, builder, |ui, _class| {
+        let (ok, cancel) = egui::CentralPanel::default().show(ui, |ui| body(ui)).inner;
+        // Escape closes it like a modal: not while a menu or a list is open
+        let escape = !egui::Popup::is_any_open(ui.ctx()) && ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Escape));
+        let closed = escape || ui.input(|i| i.viewport().close_requested());
+        if cancel || (closed && !ok) { Some(false) } else { ok.then_some(true) }
+    })
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 
 impl ExpanderApp {
@@ -258,10 +289,8 @@ impl ExpanderApp {
             (lib.groups.iter().map(|g| (g.uuid, g.name.clone())).collect(), dup)
         };
         let snippet_id = Id::unique("combo_snippet_editor");
-        let answer = ok_cancel(ctx, "combo_editor", |ui| {
-            ui.set_width(640.0);
-            ui.heading(if ed.is_new { tr("label-new-combo") } else { tr("editor-edit-title") });
-            ui.add_space(8.0);
+        let title = if ed.is_new { tr("label-new-combo") } else { tr("editor-edit-title") };
+        let answer = ok_cancel_window(ctx, "combo_editor", title, egui::vec2(680.0, 520.0), |ui| {
             egui::Grid::new("combo_grid").num_columns(2).spacing([12.0, 8.0]).show(ui, |ui| {
                 ui.label(tr("label-name"));
                 let r = ui.add(egui::TextEdit::singleline(&mut ed.combo.name).hint_text(tr("app-optional")).desired_width(f32::INFINITY));
