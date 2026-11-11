@@ -340,7 +340,7 @@ impl ExpanderApp {
                         }
                         ui.menu_button(tr("var-key"), |ui| {
                             egui::ScrollArea::vertical().max_height(320.0).show(ui, |ui| {
-                                for k in crate::shortcut::Key::VARIABLE_NAMES {
+                                for k in crate::shortcut::Key::variable_names() {
                                     if ui.button(format!("#{{key:{k}}}")).clicked() {
                                         ed.insert(&format!("#{{key:{k}}}"));
                                         ui.close();
