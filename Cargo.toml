@@ -17,7 +17,8 @@ chrono = { version = "0.4.45", features = ["serde", "unstable-locales"] }
 crossbeam-channel = "0.5.17"
 csv = "1.4.0"
 directories = "6.0.0"
-eframe = "0.37.0"
+# the defaults minus "links" (no hyperlinks in the app: it pulled url/idna/icu) and the Linux/web-only features
+eframe = { version = "0.37.0", default-features = false, features = ["accesskit", "clipboard", "default_fonts", "system_fonts", "wgpu"] }
 egui = { version = "0.37.0", features = ["monochrome_emoji_fonts"] }
 egui_extras = "0.37.0"
 emojis = "0.9.1"
