@@ -335,6 +335,7 @@ error-not-json = The file is not valid JSON.
 error-invalid-list = The combo list file is invalid.
 error-no-version = The combo list file does not specify its version number.
 error-newer-version = The combo list file was created by a newer version of the application.
+error-older-version = The file uses an old Beeftext format (version { $version }). Export the combos from the latest version of Beeftext and import that file.
 error-invalid-groups = The list of groups is not valid.
 error-invalid-group = The group list contains an invalid group.
 error-invalid-combos = The list of combos is not valid.
