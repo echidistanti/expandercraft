@@ -22,7 +22,6 @@ Equivalenti a Beeftext 15:
 - **Appunti**: il testo viene incollato tramite gli appunti, poi il contenuto precedente viene ripristinato (su Windows tutti i formati, immagini e file compresi).
 - **Import/export** JSON (formato Beeftext) e CSV (formato TextExpander), con gestione dei conflitti: salta, sovrascrivi, sovrascrivi solo i più vecchi.
 - **Backup automatico** a ogni salvataggio (ultimi 50), ripristino da backup, backup e ripristino manuali.
-- **Tabella riassuntiva** (il *cheat sheet* di Beeftext): nome, parola chiave e testo di ogni combo, gruppo per gruppo. In PDF (A4, pronto da stampare, con i caratteri inclusi nel file e le combo disattivate in grigio) oppure in CSV da aprire in un foglio di calcolo.
 - **Cartella della lista personalizzabile**, per esempio una cartella OneDrive o Dropbox per condividere le combo tra computer. Le modifiche fatte su un altro computer vengono ricaricate entro pochi secondi, e il file non viene mai sovrascritto con una lista più vecchia o con una lista che non si è riusciti a leggere.
 - **Edizione portatile**: con un file `Portable.bin` accanto all'eseguibile, tutti i dati vanno nella sottocartella `Data`.
 - **Avvio all'accesso**, icona nell'area di notifica, istanza singola (un secondo avvio mostra la finestra già aperta).
@@ -111,7 +110,6 @@ src/
 ├── engine.rs          thread del motore: buffer digitato, corrispondenze, emoji, rendering
 ├── app_state.rs       stato condiviso (RwLock) tra hook, motore e interfaccia
 ├── i18n.rs            traduzioni Fluent: tr("id"), tr!("id", nome = valore), plurali CLDR
-├── cheat_sheet.rs     tabella riassuntiva in PDF (pdf-writer, caratteri di egui ridotti con subsetter)
 ├── prefs.rs  shortcut.rs  process_list.rs  backup.rs  emoji.rs  sound.rs  paths.rs  logger.rs  icon.rs
 ├── platform/
 │   ├── mod.rs         trait Keyboard, Clipboard, InputSink e tipi comuni
@@ -173,7 +171,7 @@ Su Linux, dove il programma non compila, i test si eseguono sulla versione Windo
 CARGO_TARGET_X86_64_PC_WINDOWS_GNU_RUNNER=wine cargo test --target x86_64-pc-windows-gnu
 ```
 
-66 test unitari coprono le traduzioni, la lista condivisa tra computer, le preferenze illeggibili, la tabella riassuntiva in PDF (a capo, cambi pagina, caratteri), la ricerca delle emoji, il formato dei file, le variabili, i formati di data, i frammenti, il cursore, le corrispondenze e il motore di sostituzione (con tastiera e appunti simulati).
+62 test unitari coprono le traduzioni, la lista condivisa tra computer, le preferenze illeggibili, la ricerca delle emoji, il formato dei file, le variabili, i formati di data, i frammenti, il cursore, le corrispondenze e il motore di sostituzione (con tastiera e appunti simulati).
 
 ## Pubblicare una versione
 
