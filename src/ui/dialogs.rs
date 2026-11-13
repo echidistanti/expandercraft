@@ -227,6 +227,10 @@ fn ok_cancel_window(
         builder = builder.with_position(pos);
     }
     ctx.show_viewport_immediate(viewport, builder, |ui, _class| {
+        // first pass of a new window (closed viewports are forgotten, so a reopened one starts at 0 again)
+        if ui.ctx().cumulative_pass_nr() == 0 {
+            super::style::match_title_bar(ui.ctx());
+        }
         let (ok, cancel) = egui::CentralPanel::default().show(ui, |ui| body(ui)).inner;
         // Escape closes it like a modal: not while a menu or a list is open
         let escape = !egui::Popup::is_any_open(ui.ctx()) && ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Escape));
