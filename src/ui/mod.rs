@@ -77,6 +77,16 @@ impl ExpanderApp {
         let ctx = cc.egui_ctx.clone();
         shared.ui.set_context(ctx.clone());
         style::setup(&ctx);
+        // the window is still hidden: its title bar gets the theme of the app before eframe shows it
+        #[cfg(windows)]
+        if let Ok(eframe::wgpu::rwh::RawWindowHandle::Win32(h)) = eframe::wgpu::rwh::HasWindowHandle::window_handle(cc).map(|h| h.as_raw())
+        {
+            match shared.prefs.read().theme {
+                crate::prefs::Theme::Dark => crate::platform::set_title_bar_dark(h.hwnd.get(), true),
+                crate::prefs::Theme::Light => crate::platform::set_title_bar_dark(h.hwnd.get(), false),
+                crate::prefs::Theme::System => {}
+            }
+        }
 
         let tray = tray::Tray::create(shared.clone());
 
