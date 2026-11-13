@@ -73,6 +73,18 @@ pub fn apply_theme(ctx: &egui::Context, theme: PrefTheme) {
         PrefTheme::Light => egui::ThemePreference::Light,
         PrefTheme::Dark => egui::ThemePreference::Dark,
     });
+    match_title_bar(ctx);
+}
+
+/// Give the system title bar of the window being drawn the theme of the app, whatever the theme of the system.
+/// Once per window: on Windows each call also repaints the title bar.
+pub fn match_title_bar(ctx: &egui::Context) {
+    let theme = match ctx.options(|o| o.theme_preference) {
+        egui::ThemePreference::Dark => egui::SystemTheme::Dark,
+        egui::ThemePreference::Light => egui::SystemTheme::Light,
+        egui::ThemePreference::System => egui::SystemTheme::SystemDefault,
+    };
+    ctx.send_viewport_cmd(egui::ViewportCommand::SetTheme(theme));
 }
 
 /// A label with a muted color.

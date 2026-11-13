@@ -201,6 +201,9 @@ impl ExpanderApp {
         }
         let popups = self.popups.clone();
         ctx.show_viewport_deferred(ViewportId::from_hash_of(INPUT_ID), builder, move |ui, _class| {
+            if ui.ctx().cumulative_pass_nr() == 0 {
+                super::style::match_title_bar(ui.ctx());
+            }
             let mut guard = popups.lock();
             let Some(prompt) = guard.input.as_mut() else {
                 if guard.input_window_needed() {
