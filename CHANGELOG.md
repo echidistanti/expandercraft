@@ -1,7 +1,8 @@
 # Novità
 
-## Non ancora pubblicato
+## 0.5.0 — 13 novembre 2026
 
+- La barra del titolo della finestra principale, dell'editor delle combo e della richiesta di `#{input:}` segue il tema scelto nelle preferenze (chiaro o scuro) invece di quello del sistema operativo, anche all'avvio. Con il tema «Sistema» non cambia niente.
 - L'editor delle combo (nuova combo e modifica) si apre in una finestra a sé invece che sopra la finestra principale. La principale resta oscurata finché l'editor è aperto; un clic su di essa riporta l'editor in primo piano.
 
 ## 0.4.0 — 11 novembre 2026
