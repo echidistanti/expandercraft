@@ -217,20 +217,19 @@ fn ok_cancel_window(
     if modal(id).frame(egui::Frame::NONE).show(ctx, |_| {}).backdrop_response.clicked() {
         ctx.send_viewport_cmd_to(viewport, egui::ViewportCommand::Focus);
     }
+    let size = super::title_bar::outer_size(size);
     let mut builder = egui::ViewportBuilder::default()
         .with_title(title)
+        .with_decorations(!super::title_bar::CUSTOM)
         .with_inner_size(size)
-        .with_min_inner_size([520.0, 460.0])
+        .with_min_inner_size(super::title_bar::outer_size(egui::vec2(520.0, 460.0)))
         .with_icon(super::window_icon())
         .with_active(true);
     if let Some(pos) = super::centered_position(ctx, size) {
         builder = builder.with_position(pos);
     }
     ctx.show_viewport_immediate(viewport, builder, |ui, _class| {
-        // first pass of a new window (closed viewports are forgotten, so a reopened one starts at 0 again)
-        if ui.ctx().cumulative_pass_nr() == 0 {
-            super::style::match_title_bar(ui.ctx());
-        }
+        super::title_bar::show(ui, title, super::title_bar::Buttons::Close, true);
         let (ok, cancel) = egui::CentralPanel::default().show(ui, |ui| body(ui)).inner;
         // Escape closes it like a modal: not while a menu or a list is open
         let escape = !egui::Popup::is_any_open(ui.ctx()) && ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Escape));
@@ -294,7 +293,7 @@ impl ExpanderApp {
         };
         let snippet_id = Id::unique("combo_snippet_editor");
         let title = if ed.is_new { tr("label-new-combo") } else { tr("editor-edit-title") };
-        let answer = ok_cancel_window(ctx, "combo_editor", title, egui::vec2(680.0, 520.0), |ui| {
+        let answer = ok_cancel_window(ctx, "combo_editor", title, egui::vec2(860.0, 560.0), |ui| {
             egui::Grid::new("combo_grid").num_columns(2).spacing([12.0, 8.0]).show(ui, |ui| {
                 ui.label(tr("label-name"));
                 let r = ui.add(egui::TextEdit::singleline(&mut ed.combo.name).hint_text(tr("app-optional")).desired_width(f32::INFINITY));

@@ -840,14 +840,6 @@ pub fn foreground_window() -> Option<WindowToken> {
     if hwnd.is_null() { None } else { Some(WindowToken(hwnd as usize as u64)) }
 }
 
-/// Give a window that is not shown yet a dark or light title bar. The theme set through egui only arrives after
-/// eframe has shown the main window, which then flashes the theme of the system at startup.
-pub fn set_title_bar_dark(hwnd: isize, dark: bool) {
-    use windows_sys::Win32::Graphics::Dwm::{DWMWA_USE_IMMERSIVE_DARK_MODE, DwmSetWindowAttribute};
-    let value = i32::from(dark);
-    unsafe { DwmSetWindowAttribute(hwnd as HWND, DWMWA_USE_IMMERSIVE_DARK_MODE as u32, (&raw const value).cast(), 4) };
-}
-
 pub fn activate_window(token: WindowToken) {
     let hwnd = token.0 as usize as HWND;
     unsafe {
