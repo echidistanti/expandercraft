@@ -1,5 +1,10 @@
 # Novità
 
+## 0.5.1 — 17 novembre 2026
+
+- Su Windows la barra del titolo la disegna ExpanderCraft: ha sempre i colori del tema dell'app, chiaro o scuro, qualunque sia il tema di Windows. Ha i pulsanti in stile Windows 11; la finestra si sposta trascinando la barra, si ingrandisce con un doppio clic e si ridimensiona dai bordi e dagli angoli. Aero Snap, Win+frecce e Alt+Spazio funzionano come prima.
+- L'editor delle combo si apre più largo.
+
 ## 0.5.0 — 13 novembre 2026
 
 - La barra del titolo della finestra principale, dell'editor delle combo e della richiesta di `#{input:}` segue il tema scelto nelle preferenze (chiaro o scuro) invece di quello del sistema operativo, anche all'avvio. Con il tema «Sistema» non cambia niente.
