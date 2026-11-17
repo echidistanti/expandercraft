@@ -181,6 +181,8 @@ CARGO_TARGET_X86_64_PC_WINDOWS_GNU_RUNNER=wine cargo test --target x86_64-pc-win
 
 Il workflow `release` controlla che il tag corrisponda alla versione di `Cargo.toml`, esegue i test, compila e allega alla release `ExpanderCraft-0.3.0-windows-x64.zip`. Se la descrizione della release è vuota, la riempie con le note della versione prese da `CHANGELOG.md`. Per rifare il pacchetto di una release già pubblicata: *Actions → release → Run workflow*, indicando il tag.
 
+Se alla release alleghi già un pacchetto compilato altrove prima di pubblicarla, il workflow non compila niente e la release resta com'è: in quel caso la descrizione va scritta a mano. Per non far partire neanche il workflow `build` col push, metti `[skip ci]` nel messaggio del commit.
+
 ## Novità
 
 Le modifiche di ogni versione sono in [CHANGELOG.md](CHANGELOG.md).

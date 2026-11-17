@@ -6,6 +6,7 @@ name: release
 # Releases → Draft a new release, create the tag vX.Y.Z on main and publish. This workflow checks that the
 # tag matches Cargo.toml, runs the tests, attaches ExpanderCraft-X.Y.Z-windows-x64.zip and, if the release
 # has no description, fills it with the section of CHANGELOG.md for that version.
+# A release published with a package already attached (built elsewhere) is left as it is: nothing is built.
 on:
   release:
     types: [published]
@@ -20,6 +21,8 @@ permissions:
 
 jobs:
   windows:
+    # a release published with a package already attached (built elsewhere) is left as it is: no build on GitHub
+    if: github.event_name == 'workflow_dispatch' || toJSON(github.event.release.assets) == '[]'
     runs-on: windows-latest
     env:
       TAG: ${{ github.event.release.tag_name || inputs.tag }}
