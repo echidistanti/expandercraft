@@ -6,6 +6,7 @@ mod main_window;
 mod picker;
 mod prefs_window;
 pub mod style;
+mod title_bar;
 pub mod tray;
 
 use std::collections::HashSet;
@@ -77,16 +78,6 @@ impl ExpanderApp {
         let ctx = cc.egui_ctx.clone();
         shared.ui.set_context(ctx.clone());
         style::setup(&ctx);
-        // the window is still hidden: its title bar gets the theme of the app before eframe shows it
-        #[cfg(windows)]
-        if let Ok(eframe::wgpu::rwh::RawWindowHandle::Win32(h)) = eframe::wgpu::rwh::HasWindowHandle::window_handle(cc).map(|h| h.as_raw())
-        {
-            match shared.prefs.read().theme {
-                crate::prefs::Theme::Dark => crate::platform::set_title_bar_dark(h.hwnd.get(), true),
-                crate::prefs::Theme::Light => crate::platform::set_title_bar_dark(h.hwnd.get(), false),
-                crate::prefs::Theme::System => {}
-            }
-        }
 
         let tray = tray::Tray::create(shared.clone());
 
@@ -436,8 +427,9 @@ pub fn run(shared: Arc<AppShared>, ui_rx: Receiver<UiMsg>, start_hidden: bool) -
     let mut viewport = egui::ViewportBuilder::default()
         .with_title("ExpanderCraft")
         .with_app_id("expandercraft")
-        .with_inner_size([980.0, 640.0])
-        .with_min_inner_size([680.0, 420.0])
+        .with_decorations(!title_bar::CUSTOM)
+        .with_inner_size(title_bar::outer_size(egui::vec2(980.0, 640.0)))
+        .with_min_inner_size(title_bar::outer_size(egui::vec2(680.0, 420.0)))
         .with_icon(window_icon());
     if start_hidden {
         viewport = viewport.with_position([-20000.0, -20000.0]);

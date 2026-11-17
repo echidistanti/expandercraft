@@ -187,9 +187,10 @@ impl ExpanderApp {
     }
 
     pub(super) fn input_viewport(&mut self, ctx: &egui::Context) {
-        let size = egui::vec2(440.0, 170.0);
+        let size = super::title_bar::outer_size(egui::vec2(440.0, 170.0));
         let mut builder = ViewportBuilder::default()
             .with_title("ExpanderCraft")
+            .with_decorations(!super::title_bar::CUSTOM)
             .with_inner_size(size)
             .with_resizable(false)
             .with_always_on_top()
@@ -201,9 +202,7 @@ impl ExpanderApp {
         }
         let popups = self.popups.clone();
         ctx.show_viewport_deferred(ViewportId::from_hash_of(INPUT_ID), builder, move |ui, _class| {
-            if ui.ctx().cumulative_pass_nr() == 0 {
-                super::style::match_title_bar(ui.ctx());
-            }
+            super::title_bar::show(ui, "ExpanderCraft", super::title_bar::Buttons::Close, false);
             let mut guard = popups.lock();
             let Some(prompt) = guard.input.as_mut() else {
                 if guard.input_window_needed() {
