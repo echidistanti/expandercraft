@@ -71,11 +71,16 @@ today           →  2026-11-20            (#{dateTime:yyyy-MM-dd})
 
 ### Windows 10 and 11 (64-bit)
 
-Download the latest package from the [Releases](https://github.com/echidistanti/expandercraft/releases/latest) page, extract it and run `expandercraft.exe`. There is nothing to install.
+Each [release](https://github.com/echidistanti/expandercraft/releases/latest) offers two downloads:
 
-The executable is not code-signed, so Windows SmartScreen may warn you the first time you run it: choose *More info → Run anyway*.
+- **`ExpanderCraft-x.y.z-windows-x64-setup.exe`**, the installer. It installs for the current user by default, with no administrator rights; a dialog at the start lets you install for all users instead. It adds a Start menu entry (and, if you tick the box, a desktop shortcut) and an uninstaller in *Settings → Apps*. To update, run the installer of the new version over the old one. The installer is available in English, Italian, French and Spanish, and follows the language of Windows. If ExpanderCraft is running, setup asks you to quit it first (tray icon → Quit). Uninstalling removes the program but keeps your combos and settings in `%LOCALAPPDATA%\ExpanderCraft`.
+- **`ExpanderCraft-x.y.z-windows-x64.zip`**, the portable package: extract it anywhere and run `expandercraft.exe`. There is nothing to install.
 
-To make it portable, create an empty file named `Portable.bin` next to `expandercraft.exe`. All the settings, the combo list and the backups then live in a `Data` folder beside the executable, so you can carry the whole thing on a USB stick.
+The installer accepts the standard [Inno Setup command-line switches](https://jrsoftware.org/ishelp/topic_setupcmdline.htm), for instance `ExpanderCraft-x.y.z-windows-x64-setup.exe /VERYSILENT /CURRENTUSER` for an unattended per-user installation.
+
+The installer and the executable are not code-signed, so Windows SmartScreen may warn you the first time you run them: choose *More info → Run anyway*.
+
+To make the zip version fully portable, create an empty file named `Portable.bin` next to `expandercraft.exe`. All the settings, the combo list and the backups then live in a `Data` folder beside the executable, so you can carry the whole thing on a USB stick.
 
 ### macOS
 
@@ -227,6 +232,17 @@ cargo build --release
 # executable: target/release/expandercraft
 ```
 
+### Windows installer
+
+The installer is built with [Inno Setup](https://jrsoftware.org/isinfo.php) 6.3 or later, from `installer/expandercraft.iss`. After `cargo build --release`:
+
+```powershell
+.\installer\install-inno-setup.ps1   # once: installs a pinned Inno Setup 6 (needs administrator rights)
+.\installer\build.ps1                # writes installer\Output\ExpanderCraft-<version>-windows-x64-setup.exe
+```
+
+`build.ps1` takes the version from `Cargo.toml` and reuses the icon that `build.rs` draws for the executable. The `build` workflow does the same on every push: the setup program is in the artifacts of the run (`expandercraft-Windows-setup`), ready to try.
+
 ### Tests
 
 ```bash
@@ -263,6 +279,9 @@ src/
 │   └── unix_common.rs the parts of the macOS backend built on portable crates (arboard, Unix sockets), reusable for Linux
 └── ui/                egui/eframe interface: main window, dialogs, preferences, picker, emoji list, tray
 locales/               en.ftl (reference), it.ftl, fr.ftl, es.ftl
+installer/             Inno Setup script and the PowerShell scripts that install Inno Setup and build the setup program
+assets/                Windows resources: manifest and version information (the icon is drawn by build.rs)
+.github/workflows/     build (tests, clippy, build, installer) and release (packages attached to a release)
 ```
 
 The flow: the platform hook turns key presses into `InputEvent`s (character, backspace, break, shortcut) and sends them to the engine thread. The engine updates the buffer, looks for matching combos, evaluates the variables (the `#{input:}` dialog goes through the interface over a channel), erases the keyword, and pastes or types the result. The interface runs on the main thread and stays alive when its window is hidden in the tray; the picker and the input dialog are independent windows.
@@ -294,11 +313,11 @@ The key names in the shortcuts shown in the preferences are translated (Maiusc, 
 
 ## Publishing a release
 
-1. Update `version` in `Cargo.toml` and add the section of the new version to `CHANGELOG.md` (`## 0.3.0 — date`).
+1. Update `version` in `Cargo.toml` and turn the *Unreleased* section of `CHANGELOG.md` into the section of the new version (`## 0.3.0 — date`).
 2. Commit and push to `main`.
 3. On GitHub, open *Releases → Draft a new release*, type the tag `v0.3.0` (it is created on `main`) and publish.
 
-The `release` workflow checks that the tag matches the version in `Cargo.toml`, runs the tests, builds, and attaches `ExpanderCraft-0.3.0-windows-x64.zip` to the release. If the release description is empty, it fills it with the notes of that version from `CHANGELOG.md`. To rebuild the package of a release that is already published, use *Actions → release → Run workflow* and give the tag.
+The `release` workflow checks that the tag matches the version in `Cargo.toml`, runs the tests, builds, and attaches `ExpanderCraft-0.3.0-windows-x64-setup.exe` (the installer) and `ExpanderCraft-0.3.0-windows-x64.zip` (the portable package) to the release. If the release description is empty, it fills it with the notes of that version from `CHANGELOG.md`. To rebuild the packages of a release that is already published, use *Actions → release → Run workflow* and give the tag.
 
 If you attach a package built elsewhere before publishing the release, the workflow builds nothing and leaves the release as it is: in that case the description has to be written by hand. To keep the `build` workflow from starting on a push, put `[skip ci]` in the commit message.
 

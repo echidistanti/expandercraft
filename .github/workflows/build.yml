@@ -29,3 +29,17 @@ jobs:
         with:
           name: expandercraft-${{ runner.os }}
           path: ${{ matrix.artifact }}
+
+      # The Windows installer is built on every run: it proves that installer/expandercraft.iss still compiles,
+      # and the setup program can be downloaded from the artifacts of the run to try it.
+      - name: Build the Windows installer
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          ./installer/install-inno-setup.ps1
+          ./installer/build.ps1
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'Windows'
+        with:
+          name: expandercraft-Windows-setup
+          path: installer/Output/*-setup.exe

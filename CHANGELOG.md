@@ -2,6 +2,11 @@
 
 The changes of every version of ExpanderCraft. Each GitHub release carries the section of its own version.
 
+## Unreleased
+
+- **Windows installer** (Inno Setup), attached to every release next to the portable zip. It installs for the current user without administrator rights (or for all users, if you choose so), adds a Start menu entry and an optional desktop shortcut, registers an uninstaller, and is available in English, Italian, French and Spanish. Updating is a matter of running the new installer. Your combos and settings are never removed by the uninstaller.
+- The `build` workflow also builds the installer on every run and keeps it among the artifacts.
+
 ## 0.5.1 — 17 November 2026
 
 - On Windows, ExpanderCraft draws the title bar itself: it always has the colors of the app theme, light or dark, whatever the Windows theme is. It has Windows 11 style buttons; the window moves by dragging the bar, maximizes with a double click and resizes from its edges and corners. Aero Snap, Win+arrow keys and Alt+Space work as before.
