@@ -1,12 +1,14 @@
 name: release
 
-# Builds the Windows package and attaches it to a GitHub release.
+# Builds the Windows packages and attaches them to a GitHub release.
 #
 # To publish a version: set it in Cargo.toml, describe it in CHANGELOG.md, push, then on GitHub open
 # Releases → Draft a new release, create the tag vX.Y.Z on main and publish. This workflow checks that the
-# tag matches Cargo.toml, runs the tests, attaches ExpanderCraft-X.Y.Z-windows-x64.zip and, if the release
-# has no description, fills it with the section of CHANGELOG.md for that version.
+# tag matches Cargo.toml, runs the tests, attaches ExpanderCraft-X.Y.Z-windows-x64-setup.exe (the Inno Setup
+# installer) and ExpanderCraft-X.Y.Z-windows-x64.zip (the portable package) and, if the release has no
+# description, fills it with the section of CHANGELOG.md for that version.
 # A release published with a package already attached (built elsewhere) is left as it is: nothing is built.
+# A tag from before the installer existed gets the zip only.
 on:
   release:
     types: [published]
@@ -46,6 +48,13 @@ jobs:
       - run: cargo test
       - run: cargo build --release
 
+      - name: Build the installer
+        if: hashFiles('installer/expandercraft.iss') != ''
+        shell: pwsh
+        run: |
+          ./installer/install-inno-setup.ps1
+          ./installer/build.ps1 -Version $env:VERSION
+
       - name: Package
         shell: pwsh
         run: |
@@ -54,12 +63,15 @@ jobs:
           Copy-Item target/release/expandercraft.exe, README.md, CHANGELOG.md, LICENSE $dir
           Compress-Archive -Path $dir -DestinationPath "$dir-windows-x64.zip"
 
-      - name: Attach the package to the release
+      - name: Attach the packages to the release
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release upload "$TAG" "ExpanderCraft-$VERSION-windows-x64.zip" --clobber
+          files=("ExpanderCraft-$VERSION-windows-x64.zip")
+          setup="installer/Output/ExpanderCraft-$VERSION-windows-x64-setup.exe"
+          if [ -f "$setup" ]; then files+=("$setup"); fi
+          gh release upload "$TAG" "${files[@]}" --clobber
           # an empty description gets the notes of this version from CHANGELOG.md
           if [ -z "$(gh release view "$TAG" --json body -q .body)" ]; then
             awk -v v="$VERSION" '/^## / { found = index($0, "## " v " ") == 1 || $0 == "## " v; next } found' CHANGELOG.md > notes.md
