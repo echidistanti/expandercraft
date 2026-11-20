@@ -1,58 +1,60 @@
-# Novità
+# Changelog
 
-## 0.5.1 — 17 novembre 2026
+The changes of every version of ExpanderCraft. Each GitHub release carries the section of its own version.
 
-- Su Windows la barra del titolo la disegna ExpanderCraft: ha sempre i colori del tema dell'app, chiaro o scuro, qualunque sia il tema di Windows. Ha i pulsanti in stile Windows 11; la finestra si sposta trascinando la barra, si ingrandisce con un doppio clic e si ridimensiona dai bordi e dagli angoli. Aero Snap, Win+frecce e Alt+Spazio funzionano come prima.
-- L'editor delle combo si apre più largo.
+## 0.5.1 — 17 November 2026
 
-## 0.5.0 — 13 novembre 2026
+- On Windows, ExpanderCraft draws the title bar itself: it always has the colors of the app theme, light or dark, whatever the Windows theme is. It has Windows 11 style buttons; the window moves by dragging the bar, maximizes with a double click and resizes from its edges and corners. Aero Snap, Win+arrow keys and Alt+Space work as before.
+- The combo editor opens wider.
 
-- La barra del titolo della finestra principale, dell'editor delle combo e della richiesta di `#{input:}` segue il tema scelto nelle preferenze (chiaro o scuro) invece di quello del sistema operativo, anche all'avvio. Con il tema «Sistema» non cambia niente.
-- L'editor delle combo (nuova combo e modifica) si apre in una finestra a sé invece che sopra la finestra principale. La principale resta oscurata finché l'editor è aperto; un clic su di essa riporta l'editor in primo piano.
+## 0.5.0 — 13 November 2026
 
-## 0.4.0 — 11 novembre 2026
+- The title bar of the main window, the combo editor and the `#{input:}` prompt follows the theme chosen in the preferences (light or dark) instead of the one of the operating system, also at startup. With the "System" theme nothing changes.
+- The combo editor (new combo and edit) opens in its own window instead of on top of the main window. The main window stays dimmed while the editor is open; a click on it brings the editor back to the front.
 
-- Si leggono solo i file nel formato dell'ultima Beeftext (versione 10, lo stesso che ExpanderCraft ha sempre scritto). I formati 1–9 delle Beeftext più vecchie non vengono più convertiti, e con loro se ne va la conversione degli snippet in HTML: un file del genere va prima esportato da una Beeftext aggiornata, e anche la finestra di migrazione del primo avvio ora lo dice invece di disattivare il pulsante senza spiegazioni.
+## 0.4.0 — 11 November 2026
 
-## 0.3.0 — 11 novembre 2026
+- Only files in the format of the latest Beeftext (version 10, the one ExpanderCraft has always written) are read. Formats 1–9 of older Beeftext versions are no longer converted, and the conversion of old HTML snippets is gone with them: export such a file from an up-to-date Beeftext first. The migration dialog on first launch now says so, instead of disabling the Import button without an explanation.
 
-- Tolta la tabella riassuntiva (*Strumenti → Crea una tabella riassuntiva*), sia in PDF sia in CSV. L'esportazione delle combo in JSON e CSV resta com'era.
-- `#{key:}` accetta anche i nomi brevi dei tasti (`#{key:pgup}`, `#{key:del}`, `#{key:print}`), gli stessi delle scorciatoie.
-- Meno dipendenze: senza la tabella riassuntiva e senza il supporto ai link (mai usato) il programma si compila con 30 pacchetti in meno (220 → 190 su Windows) e pesa circa 1 MB in meno.
+## 0.3.0 — 11 November 2026
 
-## 0.2.2 — 10 novembre 2026
+- Removed the cheat sheet (*Tools → Generate cheat sheet*), both the PDF and the CSV. Exporting combos to JSON and CSV is unchanged.
+- `#{key:}` also accepts the short key names (`#{key:pgup}`, `#{key:del}`, `#{key:print}`), the same ones shortcuts use.
+- Fewer dependencies: without the cheat sheet and without link support (never used) the program builds from 30 fewer packages (220 → 190 on Windows) and is about 1 MB smaller.
 
-- **Sicurezza**: il testo inserito da `#{clipboard}`, `#{input:}`, `#{envVar:}` e `#{powershell:}` non viene più interpretato. Prima un testo copiato con dentro `#{shortcut:Win+R}…#{key:enter}` poteva premere tasti ed eseguire comandi.
-- La lista delle combo che non si riesce a leggere all'avvio non viene più sostituita da una lista vuota, e non viene sovrascritta finché non la ripristini. Il messaggio parla della copia di sicurezza solo se la copia è riuscita davvero.
-- Lista in una cartella condivisa (OneDrive, Dropbox…): le modifiche fatte su un altro computer vengono ricaricate entro pochi secondi. Se il file è cambiato mentre modificavi una combo, ExpanderCraft lo ricarica e ti avvisa, invece di sovrascrivere le modifiche dell'altro computer.
-- Un errore durante una sostituzione non spegne più le espansioni fino al riavvio. Uno spostamento di data enorme (`#{dateTime:+100000000d:}`) viene ignorato.
-- L'importazione di un file JSON non valido (per esempio di una versione più recente) mostra l'errore, invece di importare frammenti di JSON come se fosse un CSV.
-- Premendo due volte la scorciatoia del selettore, la combo scelta arriva comunque nell'applicazione di partenza.
-- Un valore non valido nelle preferenze azzera solo quel valore, e non più tutte le preferenze (cartella della lista compresa). Il file originale viene conservato come `settings.broken.json`.
-- Interfaccia più leggera: la finestra di importazione da Beeftext non rilegge più il file a ogni ridisegno, e il selettore e la tabella ordinano le combo con meno lavoro.
-- Pulizia del codice: tolti la dipendenza `rand` e il codice rimasto inutilizzato dal backend Linux.
+## 0.2.2 — 10 November 2026
 
-## 0.2.1 — 10 novembre 2026
+- **Security**: text inserted by `#{clipboard}`, `#{input:}`, `#{envVar:}` and `#{powershell:}` is no longer interpreted. Before, copied text containing `#{shortcut:Win+R}…#{key:enter}` could press keys and run commands.
+- A combo list that cannot be read at startup is no longer replaced by an empty list, and it is not overwritten until you restore it. The message mentions the backup copy only if the copy was really made.
+- List in a shared folder (OneDrive, Dropbox…): changes made on another computer are reloaded within a few seconds. If the file changed while you were editing a combo, ExpanderCraft reloads it and warns you, instead of overwriting the changes of the other computer.
+- An error during a substitution no longer turns expansion off until the next restart. A huge date shift (`#{dateTime:+100000000d:}`) is ignored.
+- Importing an invalid JSON file (for instance one from a newer version) shows the error, instead of importing fragments of JSON as if it were a CSV.
+- When the picker shortcut is pressed twice, the chosen combo still reaches the application you started from.
+- An invalid value in the preferences resets only that value, not all the preferences (the list folder included). The original file is kept as `settings.broken.json`.
+- Lighter interface: the Beeftext import dialog no longer re-reads the file on every redraw, and the picker and the table sort combos with less work.
+- Code cleanup: removed the `rand` dependency and the code left unused by the Linux backend.
 
-- Di default l'interfaccia usa la lingua del sistema, e l'inglese se la lingua del sistema non è tradotta.
-- Il gruppo creato al primo avvio, se ha ancora il nome predefinito ("Default Group"), viene rinominato nella lingua scelta.
-- Con lo spazio come attivatore, lo spazio che completa una parola chiave non arriva più all'applicazione: ExpanderCraft lo trattiene e cancella solo la parola chiave. Nel Blocco note di Windows 11 lo spazio avviava controllo ortografico e correzione automatica, e la combo usciva a volte come una semplice "v".
-- La sostituzione aspetta che tu abbia rilasciato Ctrl, Alt, AltGr, Maiusc e Win prima di inviare i tasti: con le parole chiave che finiscono con un carattere fatto con AltGr (`@@`) il Blocco note di Windows 11 poteva entrare nella modalità dei tasti di scelta rapida e perdere l'incolla.
-- Windows: nel Blocco note di Windows 11, e in altre app recenti, alcune combo comparivano come una semplice "v" al posto del testo. Ora la scorciatoia di incolla (e quelle di `#{shortcut:}`) tiene premuto Ctrl abbastanza a lungo anche quando l'app è in ritardo, per esempio dopo lo spazio che fa scattare la combo.
-- Windows: nel Blocco note di Windows 11 le combo che iniziano con un segno di punteggiatura (`.cf`) lasciavano a volte il primo carattere. Il Blocco note perdeva un backspace quando arrivavano tutti insieme: ora ExpanderCraft li manda a 15 ms di distanza.
-- Con la corrispondenza non rigorosa vince la parola chiave più lunga: scrivendo `@@@` scatta la combo `@@@` e non `@@`.
-- Italiano: "shortcode" al posto di "codici delle emoji"; la casella delle preferenze è diventata "Usa gli shortcode delle emoji".
+## 0.2.1 — 10 November 2026
 
-## 0.2.0 — 10 novembre 2026
+- By default the interface uses the system language, and English when the system language is not translated.
+- The group created at first launch, if it still has the default name ("Default Group"), is renamed in the chosen language.
+- With the space as trigger, the space that completes a keyword no longer reaches the application: ExpanderCraft holds it back and erases only the keyword. In the Windows 11 Notepad the space started spell checking and autocorrect, and the combo sometimes came out as a plain "v".
+- The substitution waits until you have released Ctrl, Alt, AltGr, Shift and Win before sending keys: with keywords ending in a character typed with AltGr (`@@`), the Windows 11 Notepad could enter its shortcut-key mode and lose the paste.
+- Windows: in the Windows 11 Notepad, and in other recent apps, some combos appeared as a plain "v" instead of the text. The paste shortcut (and those of `#{shortcut:}`) now holds Ctrl long enough even when the app is late, for instance right after the space that triggers the combo.
+- Windows: in the Windows 11 Notepad, combos starting with a punctuation mark (`.cf`) sometimes left the first character behind. Notepad dropped a backspace when they all arrived together: ExpanderCraft now sends them 15 ms apart.
+- With loose matching the longest keyword wins: typing `@@@` triggers the combo `@@@`, not `@@`.
+- Italian translation: "shortcode" replaces "codici delle emoji", and the preferences checkbox now reads "Usa gli shortcode delle emoji".
 
-- **Interfaccia tradotta** in inglese (lingua predefinita), italiano, francese e spagnolo, con i plurali giusti per ogni lingua. La lingua si sceglie in Preferenze › Aspetto, anche "Lingua del sistema", e cambia subito, menu della tray compreso.
-- **Tabella riassuntiva in PDF**: nome, parola chiave e testo di ogni combo, gruppo per gruppo, in un A4 pronto da stampare. Resta disponibile il CSV.
-- **Elenco delle emoji** dentro il programma (*Aiuto → Elenco delle emoji* o Preferenze › Emoji): ricerca per shortcode, nome o categoria; un clic copia lo shortcode.
-- Italiano rivisto: "combo" è femminile ovunque, più qualche formulazione più chiara.
-- Messaggi di errore sul file delle combo e sull'avvio automatico tradotti.
-- macOS: il testo messo negli appunti durante una sostituzione resta fuori dalla cronologia.
-- Linux è temporaneamente fuori dal ramo principale; il lavoro su X11 e Wayland continua nel branch `linux-wayland`.
+## 0.2.0 — 10 November 2026
 
-## 0.1.0 — 9 novembre 2026
+- **Translated interface** in English (the default), Italian, French and Spanish, with the correct plural forms for each language. The language is chosen in Preferences › Appearance, "System language" included, and changes immediately, tray menu too.
+- **PDF cheat sheet**: name, keyword and text of every combo, group by group, on a print-ready A4 page. The CSV is still available.
+- **Emoji list** inside the program (*Help → Emoji list* or Preferences › Emojis): search by shortcode, name or category; one click copies the shortcode.
+- Italian translation reviewed: "combo" is feminine everywhere, plus a few clearer wordings.
+- Error messages about the combo file and about launching at login are translated.
+- macOS: text put on the clipboard during a substitution stays out of the clipboard history.
+- Linux is temporarily out of the main branch; the work on X11 and Wayland continues in the `linux-wayland` branch.
 
-- Prima versione: clone di Beeftext in Rust per Windows, con il backend macOS già compilabile.
+## 0.1.0 — 9 November 2026
+
+- First version: a Beeftext clone in Rust for Windows, with the macOS backend already compiling.

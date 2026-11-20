@@ -1,70 +1,218 @@
 # ExpanderCraft
 
-Espansore di testo scritto in Rust, clone di [Beeftext](https://github.com/xmichelo/Beeftext) (C++/Qt, licenza MIT).
-Digiti una parola chiave in qualsiasi applicazione e ExpanderCraft la sostituisce con il testo associato (la *combo*).
+[![build](https://github.com/echidistanti/expandercraft/actions/workflows/build.yml/badge.svg)](https://github.com/echidistanti/expandercraft/actions/workflows/build.yml)
+[![release](https://img.shields.io/github/v/release/echidistanti/expandercraft)](https://github.com/echidistanti/expandercraft/releases/latest)
+[![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Piattaforme: Windows 10/11 e macOS. Il supporto a Linux è rimandato: il codice che dipende dal sistema sta tutto in `src/platform/`, quindi un backend Linux si potrà aggiungere in seguito senza toccare il resto.
+**A fast, lightweight text expander for Windows and macOS, written in Rust.**
+Type a short keyword in any application and ExpanderCraft replaces it with the text you stored for it: an email signature, a boilerplate paragraph, today's date, an emoji, even a sequence of key presses.
 
-## Funzionalità
+ExpanderCraft is a clone of [Beeftext](https://github.com/xmichelo/Beeftext) (C++/Qt, MIT license). It reads and writes the same combo file format, so a Beeftext library moves over with one click and keeps working in both programs.
 
-Equivalenti a Beeftext 15:
+```text
+you type        →  you get
+@@              →  jane.doe@example.com
+sig             →  Kind regards,
+                   Jane Doe
+today           →  2026-11-20            (#{dateTime:yyyy-MM-dd})
+|tada|          →  🎉
+```
 
-- **Combo**: parola chiave → testo, con nome, descrizione, gruppo, stato attivo/disattivo.
-- **Corrispondenza** *esatta* (il testo digitato coincide con la parola chiave) o *libera* (la combo scatta anche in mezzo a una parola), per combo o come valore predefinito.
-- **Maiuscole/minuscole**: distinte oppure indifferenti, per combo o come valore predefinito.
-- **Gruppi** attivabili e disattivabili, riordinabili.
-- **Variabili** nel testo (vedi sotto), comprese quelle annidate (`#{combo:}`), con protezione dalla ricorsione infinita.
-- **Selettore delle combo** (picker): finestra di ricerca aperta con una scorciatoia globale (predefinita `Ctrl+Alt+Shift+Invio`), ordinata per ultimo uso.
-- **Sostituzione automatica**, oppure **manuale** con scorciatoia (`Ctrl+Alt+Shift+B`), con eventuale attivazione tramite **spazio** dopo la parola chiave.
-- **Scorciatoia per attivare/disattivare** l'applicazione (`Ctrl+Alt+Shift+V`, disattivata di default).
-- **Emoji** con gli shortcode tra delimitatori (`|smile|` → 😄), anche nel picker. Gli shortcode sono quelli di GitHub (gemoji). L'elenco completo è dentro il programma (*Aiuto → Elenco delle emoji*, oppure Preferenze › Emoji): si cerca per shortcode, nome inglese o categoria, e un clic copia lo shortcode.
-- **Applicazioni escluse** (nessuna sostituzione), **applicazioni sensibili** (testo digitato carattere per carattere al posto dell'incolla), esclusioni specifiche per le emoji. Sono ammessi i caratteri jolly `*` e `?`.
-- **Appunti**: il testo viene incollato tramite gli appunti, poi il contenuto precedente viene ripristinato (su Windows tutti i formati, immagini e file compresi).
-- **Import/export** JSON (formato Beeftext) e CSV (formato TextExpander), con gestione dei conflitti: salta, sovrascrivi, sovrascrivi solo i più vecchi.
-- **Backup automatico** a ogni salvataggio (ultimi 50), ripristino da backup, backup e ripristino manuali.
-- **Cartella della lista personalizzabile**, per esempio una cartella OneDrive o Dropbox per condividere le combo tra computer. Le modifiche fatte su un altro computer vengono ricaricate entro pochi secondi, e il file non viene mai sovrascritto con una lista più vecchia o con una lista che non si è riusciti a leggere.
-- **Edizione portatile**: con un file `Portable.bin` accanto all'eseguibile, tutti i dati vanno nella sottocartella `Data`.
-- **Avvio all'accesso**, icona nell'area di notifica, istanza singola (un secondo avvio mostra la finestra già aperta).
-- **Suono** di conferma (integrato, oppure un file WAV a scelta).
-- Interfaccia in **inglese** (predefinita), **italiano**, **francese** e **spagnolo**, con cambio di lingua immediato; tema chiaro, scuro o di sistema.
+## Contents
 
-### Compatibilità con Beeftext
+- [Features](#features)
+- [Installation](#installation)
+- [Getting started](#getting-started)
+- [Variables](#variables)
+- [Emoji](#emoji)
+- [Your data and settings](#your-data-and-settings)
+- [Compatibility with Beeftext](#compatibility-with-beeftext)
+- [Platform support](#platform-support)
+- [Troubleshooting](#troubleshooting)
+- [Building from source](#building-from-source)
+- [Architecture](#architecture)
+- [Translations](#translations)
+- [Publishing a release](#publishing-a-release)
+- [License and credits](#license-and-credits)
 
-ExpanderCraft legge e scrive il formato `comboList.json` dell'ultima versione di Beeftext (versione 10). I file nei formati più vecchi (1–9) vanno prima esportati da una Beeftext aggiornata. Al primo avvio, se trova una libreria di Beeftext (`%LOCALAPPDATA%\beeftext.org\Beeftext\comboList.json`), propone di importarla con tutti i gruppi. Un backup di Beeftext si può aprire con *Strumenti → Ripristina la lista delle combo*.
+## Features
 
-## Variabili
+**Expansion**
 
-| Variabile | Effetto |
+- **Combos**: a keyword mapped to a snippet, with a name, a description, a group and an enabled/disabled state.
+- **Strict or loose matching**, per combo or as the default for new ones. Strict means the typed text must be exactly the keyword; loose lets the combo trigger in the middle of a word. When several loose keywords match, the longest wins.
+- **Case sensitivity**, per combo or as the default.
+- **Automatic or manual triggering**. In automatic mode a combo fires the moment its keyword is typed. In manual mode you type the keyword and press a trigger shortcut (`Ctrl+Alt+Shift+B` by default). You can also trigger with a space typed after the keyword, and choose whether the space is kept.
+- **Combo picker**: a search window opened by a global shortcut (`Ctrl+Alt+Shift+Enter` by default), sorted by last use, that inserts the combo you choose into the application you came from.
+- **Enable/disable shortcut** (`Ctrl+Alt+Shift+V`, off by default) to pause ExpanderCraft without quitting it.
+- **Clipboard-based insertion** that restores what was on the clipboard afterwards (on Windows every format, images and files included), keeps the pasted text out of the Windows `Win+V` and cloud clipboard histories, and can paste with `Shift+Insert` instead of `Ctrl+V` for applications that need it.
+- **Excluded applications** (no expansion at all) and **sensitive applications** (the text is typed key by key instead of pasted), both with `*` and `?` wildcards.
+
+**Snippets**
+
+- **[Variables](#variables)** for the clipboard, dates and times (with offsets and custom formats), environment variables, user input, PowerShell output, other combos, the cursor position, key presses, shortcuts and delays. Variables nest, and recursion is detected.
+- **[Emoji shortcodes](#emoji)** between delimiters (`|smile|` → 😄), with a searchable list built into the program.
+
+**Organization and data**
+
+- **Groups** that can be enabled, disabled and reordered.
+- **Import and export** as JSON (the Beeftext format) and CSV (the TextExpander format), with conflict handling: skip, overwrite, or overwrite only the older combos.
+- **Automatic backups** at every save (the last 50 are kept), restore from any backup, and manual backup and restore.
+- **A combo list in a folder of your choice**, for instance a OneDrive or Dropbox folder, to share your combos between computers. Changes made on another computer are picked up within a few seconds, and the file is never overwritten with an older list or with a list that could not be read.
+- **Portable edition**: with a `Portable.bin` file next to the executable, all the data goes into a `Data` sub-folder.
+
+**Application**
+
+- Notification-area (tray) icon, launch at login and single-instance behavior (starting a second copy brings up the window of the first).
+- A confirmation sound, either built in or a WAV file of your choice.
+- Interface in **English** (the default), **Italian**, **French** and **Spanish**, switchable on the fly, with light, dark or system theme.
+
+## Installation
+
+### Windows 10 and 11 (64-bit)
+
+Download the latest package from the [Releases](https://github.com/echidistanti/expandercraft/releases/latest) page, extract it and run `expandercraft.exe`. There is nothing to install.
+
+The executable is not code-signed, so Windows SmartScreen may warn you the first time you run it: choose *More info → Run anyway*.
+
+To make it portable, create an empty file named `Portable.bin` next to `expandercraft.exe`. All the settings, the combo list and the backups then live in a `Data` folder beside the executable, so you can carry the whole thing on a USB stick.
+
+### macOS
+
+There is no ready-made macOS package yet: build it from source (see [Building from source](#building-from-source)). On first launch, grant the **Accessibility** and **Input Monitoring** permissions in *System Settings › Privacy & Security*. They are tied to the binary, so after every rebuild you may need to remove them and grant them again.
+
+## Getting started
+
+1. **Launch ExpanderCraft.** The main window opens and an icon appears in the notification area. Closing the window hides it to the tray; *File → Quit* (or the tray menu) really exits.
+2. **Import from Beeftext, if you have it.** On first launch, if a Beeftext library is found on the computer, ExpanderCraft offers to import it with all its groups.
+3. **Create a combo.** Choose *Combo → New combo* (or press *Create your first combo* when the list is empty), type a keyword and the snippet, and save.
+4. **Try it.** Type the keyword in any application. By default the combo fires as soon as the keyword is complete and the keyword is replaced by the snippet.
+5. **Tune it** in *File → Preferences*: Behavior (triggering, picker and toggle shortcuts, sound, launch at login), Appearance (language and theme), Combos (default matching, warnings, combo list folder), Emojis, and Advanced (text insertion, backups, PowerShell executable, diagnostics).
+
+### Default shortcuts
+
+| Action | Shortcut |
 |---|---|
-| `#{clipboard}` | testo contenuto negli appunti |
-| `#{cursor}` | posizione del cursore dopo la sostituzione |
-| `#{date}` `#{time}` `#{dateTime}` | data/ora nel formato del sistema (su Windows: formato lungo delle impostazioni internazionali) |
-| `#{dateTime:yyyy-MM-dd HH:mm}` | formato personalizzato in stile Qt (`d dd ddd dddd M MM MMM MMMM yy yyyy h hh H HH m mm s ss z zzz AP ap`, testo tra apici, `w`/`ww` per la settimana ISO) |
-| `#{dateTime:+1d-2h:formato}` | data/ora spostata (`y M w d h m s z`, segno obbligatorio; formato vuoto ammesso, i due punti finali sono obbligatori) |
-| `#{combo:kw}` `#{upper:kw}` `#{lower:kw}` `#{trim:kw}` | testo di un'altra combo, eventualmente trasformato |
-| `#{input:Descrizione}` | chiede un valore all'utente; la stessa descrizione viene chiesta una volta sola |
-| `#{envVar:NOME}` | variabile d'ambiente |
-| `#{powershell:percorso.ps1[:timeoutMs]}` | output di uno script PowerShell (10 s di default, `0` = nessun limite; su macOS usa `pwsh`) |
-| `#{key:nome[:ripetizioni]}` | preme un tasto (`tab`, `enter`, `up`, `f5`, `volumeUp`…) |
-| `#{shortcut:Ctrl+Shift+J}` | preme una scorciatoia |
-| `#{delay:ms}` | pausa |
+| Open the combo picker | `Ctrl+Alt+Shift+Enter` |
+| Trigger a combo manually (manual mode) | `Ctrl+Alt+Shift+B` |
+| Enable or disable ExpanderCraft (off by default) | `Ctrl+Alt+Shift+V` |
 
-Dentro una variabile, `\}` scrive `}` e `\\` scrive `\`. Le variabili sconosciute restano nel testo così come sono.
+All three can be changed in the preferences. A configured shortcut is intercepted: it never reaches the active application.
 
-## Compilazione
+## Variables
 
-Serve Rust stabile ≥ 1.88 (edizione 2024): <https://rustup.rs>.
+A snippet can contain variables, written `#{name}` or `#{name:parameter}`. They are evaluated each time the combo fires. The same list is available in the program under *Help → Variables reference*.
+
+| Variable | Result |
+|---|---|
+| `#{clipboard}` | The text on the clipboard. |
+| `#{cursor}` | Where the text cursor ends up after the substitution. |
+| `#{date}` `#{time}` `#{dateTime}` | The current date and/or time in the system format (on Windows, the long format of the regional settings). |
+| `#{dateTime:yyyy-MM-dd HH:mm}` | A custom, Qt-style format: `d dd ddd dddd M MM MMM MMMM yy yyyy h hh H HH m mm s ss z zzz AP ap`, quoted literal text between single quotes, and `w`/`ww` for the ISO week. |
+| `#{dateTime:+1d-2h:format}` | A shifted date and time (units `y M w d h m s z`, the sign is mandatory). The format may be empty; the final colon is mandatory. |
+| `#{combo:kw}` `#{upper:kw}` `#{lower:kw}` `#{trim:kw}` | The snippet of another combo, optionally transformed. |
+| `#{input:Description}` | Asks you for a value. The same description is asked only once per substitution. |
+| `#{envVar:NAME}` | The value of an environment variable. |
+| `#{powershell:path.ps1[:timeoutMs]}` | The output of a PowerShell script (10 seconds by default, `0` for no limit). On macOS it runs with `pwsh`. |
+| `#{key:name[:repeat]}` | Presses a key (`tab`, `enter`, `up`, `f5`, `volumeUp`…), optionally several times. |
+| `#{shortcut:Ctrl+Shift+J}` | Presses a keyboard shortcut. |
+| `#{delay:ms}` | Pauses for the given number of milliseconds. |
+
+Inside a variable, `\}` writes a `}` and `\\` writes a `\`. Unknown variables are left in the text as they are.
+
+For example, a combo with the keyword `meet` and this snippet:
+
+```text
+Hi #{input:Name},
+
+Thanks for your time on #{dateTime:dddd d MMMM}. #{cursor}
+```
+
+asks for a name, fills in the date, and leaves the cursor at the end, ready for you to continue typing.
+
+**A note on safety.** Text that comes from outside the snippet (the clipboard, `#{input:}`, `#{envVar:}`, `#{powershell:}`) is inserted exactly as it is. If it contains `#{key:}`, `#{shortcut:}`, `#{delay:}` or `#{cursor}`, those are not executed, so text copied from a web page can never press keys on your behalf.
+
+## Emoji
+
+Turn on *Use emoji shortcodes* in *Preferences › Emojis* and type a shortcode between the delimiters (`|` on both sides by default): `|smile|` becomes 😄. The shortcodes are the ones used by GitHub ([gemoji](https://github.com/github/gemoji)). The full list is in the program (*Help → Emoji list*, or the button in *Preferences › Emojis*): search by shortcode, English name or category, and click a row to copy its shortcode with your delimiters. Emojis can also appear in the combo picker after three typed characters, and they have their own list of excluded applications.
+
+## Your data and settings
+
+| | Windows | macOS |
+|---|---|---|
+| Data folder | `%LOCALAPPDATA%\ExpanderCraft` | `~/Library/Application Support/ExpanderCraft` |
+| Portable edition | `Data` next to the executable (when `Portable.bin` is present) | — |
+
+The data folder contains:
+
+| File or folder | Content |
+|---|---|
+| `comboList.json` | Your combos and groups (Beeftext format, version 10). Can be moved to another folder in *Preferences › Combos*. |
+| `settings.json` | Your preferences. If a value cannot be read, only that value is reset and the original file is kept as `settings.broken.json`. |
+| `comboLastUse.json`, `emojiLastUse.json` | Last-use data used to sort the picker. |
+| `excludedApps.json`, `sensitiveApps.json`, `emojiExcludedApps.json` | The application lists. |
+| `Backup/` | Automatic backups of the combo list (the 50 most recent). |
+| `log.txt` | The log file, when enabled in *Preferences › Advanced*. |
+
+*Tools → Open data folder* opens it for you. If the combo list cannot be read at startup, ExpanderCraft does not replace it with an empty one and does not overwrite it until you restore a backup.
+
+To share combos between computers, point the combo list folder of each one to the same OneDrive or Dropbox folder.
+
+## Compatibility with Beeftext
+
+ExpanderCraft reads and writes the `comboList.json` format of the latest Beeftext (version 10). Files in the older formats (1–9) have to be exported first from an up-to-date Beeftext. On first launch, if a Beeftext library is found (`%LOCALAPPDATA%\beeftext.org\Beeftext\comboList.json`), ExpanderCraft offers to import it with all its groups. A Beeftext backup can be opened with *Tools → Restore combo list*.
+
+**Differences from Beeftext**
+
+- `#{key:insert}` presses Ins (in Beeftext it pressed Home), and `#{key:backspace}` is available.
+- `#{shortcut:}` stops at the first `}`, so several shortcuts in the same text work.
+- Configured shortcuts are intercepted and do not reach the active application.
+- After a substitution, modifier keys are pressed again only if you are still holding them, so Shift or Ctrl never stay stuck.
+- The pasted text does not enter the Windows clipboard history.
+- A combo cannot call itself with `#{combo:}`.
+- Text coming from outside the snippet is inserted as plain text (see [Variables](#variables)).
+- With the space as trigger and the final space kept, `#{cursor}` accounts for the added space.
+- There is no update check. There are four translations (English, Italian, French, Spanish) against the eleven of Beeftext.
+
+## Platform support
+
+| | Windows | macOS |
+|---|---|---|
+| Keyboard and mouse capture | `WH_KEYBOARD_LL` / `WH_MOUSE_LL` hooks | `CGEventTap` |
+| Text from a key press | `ToUnicodeEx` with the layout of the active window, dead keys preserved | `CGEventKeyboardGetUnicodeString` |
+| Key synthesis | `SendInput` (events are marked and ignored by the hook) | `CGEventPost` (marked events) |
+| Global shortcuts intercepted | yes | yes |
+| Clipboard with backup | every format in memory; excluded from the Win+V and cloud histories | text and images (`arboard`); excluded from the history |
+| Active application | executable name | app name (`NSWorkspace`) |
+| Launch at login | `HKCU\…\Run` | LaunchAgent |
+| Verification | build, clippy, unit tests, and end-to-end tests under Wine (Notepad) | build, clippy and tests in CI (`macos-latest`) |
+
+Linux is not supported for now. All the code that depends on the operating system lives in `src/platform/`, so a Linux backend can be added later without touching the rest. An early experiment with X11 and Wayland lives in the `linux-wayland` branch.
+
+**Known limits**
+
+- *macOS*: the backend builds and passes the tests in CI, but has not been tried on a real Mac yet, and there is no signed `.app` bundle.
+- *Windows*: like every expander based on `SendInput`, ExpanderCraft cannot type into windows running as administrator unless it is elevated too (UIPI).
+
+## Troubleshooting
+
+- **Nothing expands in one particular program.** Check that the program is not in the excluded applications list. If it runs as administrator, ExpanderCraft has to run as administrator too (see the known limits above).
+- **Characters come out wrong, or too early.** If the application is slow to react, increase the delay between keystrokes in *Preferences › Advanced*, or add the application to the sensitive applications list so its text is typed key by key. Some programs need `Shift+Insert` instead of `Ctrl+V`: there is a switch for that in the same page.
+- **The combo list cannot be loaded.** ExpanderCraft tells you, saves a copy of the file next to the original and leaves the original untouched. Restore a backup from *Tools → Restore an automatic backup*.
+- **Something else.** Turn on *Write a log file* in *Preferences › Advanced*, reproduce the problem, and open the log with *Tools → Open log file*. The file is `log.txt` in the data folder.
+
+## Building from source
+
+You need stable Rust 1.88 or later (edition 2024): <https://rustup.rs>.
 
 ### Windows
 
 ```powershell
 cargo build --release
-# eseguibile: target\release\expandercraft.exe
+# executable: target\release\expandercraft.exe
 ```
 
-L'eseguibile non è firmato: al primo avvio SmartScreen può mostrare un avviso (*Ulteriori informazioni → Esegui comunque*).
-
-Cross-compilazione da Linux:
+You can also cross-compile from Linux:
 
 ```bash
 sudo apt install gcc-mingw-w64-x86-64
@@ -76,59 +224,56 @@ cargo build --release --target x86_64-pc-windows-gnu
 
 ```bash
 cargo build --release
+# executable: target/release/expandercraft
 ```
 
-Al primo avvio vanno concessi i permessi *Accessibilità* e *Monitoraggio input* (Impostazioni di Sistema › Privacy e sicurezza). I permessi sono legati al binario: dopo ogni ricompilazione può servire rimuoverli e concederli di nuovo.
+### Tests
 
-## Stato delle piattaforme
-
-| | Windows | macOS |
-|---|---|---|
-| Intercettazione tastiera e mouse | hook `WH_KEYBOARD_LL`/`WH_MOUSE_LL` | `CGEventTap` |
-| Testo da tasto | `ToUnicodeEx` con il layout della finestra attiva, tasti morti preservati | `CGEventKeyboardGetUnicodeString` |
-| Sintesi dei tasti | `SendInput` (eventi marcati e ignorati dall'hook) | `CGEventPost` (eventi marcati) |
-| Scorciatoie globali intercettate | sì | sì |
-| Appunti con backup | tutti i formati in memoria; esclusi da cronologia Win+V e cloud | testo e immagini (`arboard`), esclusi dalla cronologia |
-| Applicazione attiva | nome dell'eseguibile | nome dell'app (`NSWorkspace`) |
-| Avvio all'accesso | `HKCU\…\Run` | LaunchAgent |
-| Verifiche fatte | compilazione, clippy, test unitari e test end-to-end sotto Wine (Notepad) | compilazione, clippy e test in CI (`macos-latest`) |
-
-**Limiti noti**
-
-- *macOS*: il backend compila; manca ancora il collaudo su una macchina reale e la creazione di un bundle `.app` firmato.
-- *Windows*: come ogni espansore basato su `SendInput`, non scrive nelle finestre eseguite come amministratore se ExpanderCraft non è a sua volta elevato (UIPI).
-
-## Architettura
-
+```bash
+cargo test
 ```
+
+On Linux, where the program itself does not build, the tests can be run against the Windows version with Wine:
+
+```bash
+CARGO_TARGET_X86_64_PC_WINDOWS_GNU_RUNNER=wine cargo test --target x86_64-pc-windows-gnu
+```
+
+More than 60 unit tests cover the translations, the list shared between computers, unreadable preferences, emoji search, the file format, variables, date formats, fragments, the cursor, matching, and the substitution engine (with a simulated keyboard and clipboard).
+
+Every push and pull request is also built and tested on GitHub Actions for Windows and macOS (`build` workflow), with `cargo clippy -- -D warnings`.
+
+## Architecture
+
+```text
 src/
-├── main.rs            avvio: percorsi, preferenze, log, istanza singola, thread
-├── library.rs         Combo, Group, Library: formato JSON Beeftext v10, CSV, import con conflitti
-├── variables.rs       valutazione delle variabili (trait VariableHost, testabile)
-├── fragments.rs       suddivisione in testo/#{key}/#{shortcut}/#{delay}, calcolo di #{cursor}
-├── qtdate.rs          formati data/ora in stile Qt, spostamenti, nomi localizzati
-├── engine.rs          thread del motore: buffer digitato, corrispondenze, emoji, rendering
-├── app_state.rs       stato condiviso (RwLock) tra hook, motore e interfaccia
-├── i18n.rs            traduzioni Fluent: tr("id"), tr!("id", nome = valore), plurali CLDR
+├── main.rs            start-up: paths, preferences, log, single instance, threads
+├── library.rs         Combo, Group, Library: Beeftext v10 JSON format, CSV, import with conflicts
+├── variables.rs       variable evaluation (the VariableHost trait keeps it testable)
+├── fragments.rs       splitting into text / #{key} / #{shortcut} / #{delay}, #{cursor} computation
+├── qtdate.rs          Qt-style date and time formats, shifts, localized names
+├── engine.rs          engine thread: typed buffer, matching, emoji, rendering
+├── app_state.rs       state shared (RwLock) between the hooks, the engine and the interface
+├── i18n.rs            Fluent translations: tr("id"), tr!("id", name = value), CLDR plurals
 ├── prefs.rs  shortcut.rs  process_list.rs  backup.rs  emoji.rs  sound.rs  paths.rs  logger.rs  icon.rs
 ├── platform/
-│   ├── mod.rs         trait Keyboard, Clipboard, InputSink e tipi comuni
-│   ├── windows.rs     backend Windows
-│   ├── macos.rs       backend macOS
-│   └── unix_common.rs parti del backend macOS su crate portabili (arboard, socket Unix), riusabili per Linux
-└── ui/                interfaccia egui/eframe: finestra principale, dialoghi, preferenze, picker, elenco delle emoji, tray
-locales/               en.ftl (riferimento), it.ftl, fr.ftl, es.ftl
+│   ├── mod.rs         Keyboard, Clipboard and InputSink traits, shared types
+│   ├── windows.rs     Windows backend
+│   ├── macos.rs       macOS backend
+│   └── unix_common.rs the parts of the macOS backend built on portable crates (arboard, Unix sockets), reusable for Linux
+└── ui/                egui/eframe interface: main window, dialogs, preferences, picker, emoji list, tray
+locales/               en.ftl (reference), it.ftl, fr.ftl, es.ftl
 ```
 
-Flusso: l'hook di piattaforma traduce i tasti in `InputEvent` (carattere, backspace, interruzione, scorciatoia) e li invia al thread del motore. Il motore aggiorna il buffer, cerca le combo, valuta le variabili (il dialogo `#{input:}` passa per l'interfaccia tramite un canale), cancella la parola chiave e incolla o digita il risultato. L'interfaccia gira nel thread principale e resta attiva anche con la finestra nascosta nella tray: il picker e il dialogo di input sono finestre indipendenti.
+The flow: the platform hook turns key presses into `InputEvent`s (character, backspace, break, shortcut) and sends them to the engine thread. The engine updates the buffer, looks for matching combos, evaluates the variables (the `#{input:}` dialog goes through the interface over a channel), erases the keyword, and pastes or types the result. The interface runs on the main thread and stays alive when its window is hidden in the tray; the picker and the input dialog are independent windows.
 
-Per aggiungere una piattaforma (Linux è la prossima) basta un modulo in `platform/` che esponga le stesse funzioni (`start_input_monitor`, `new_keyboard`, `new_clipboard`, `active_app_name`, …).
+To add a platform (Linux is next), write a module in `platform/` that exposes the same functions (`start_input_monitor`, `new_keyboard`, `new_clipboard`, `active_app_name`, …).
 
-## Traduzioni
+## Translations
 
-I testi dell'interfaccia stanno in `locales/*.ftl`, nel formato [Fluent](https://projectfluent.org), e vengono inclusi nell'eseguibile. L'inglese (`en.ftl`) è il riferimento: un messaggio che manca in un'altra lingua viene mostrato in inglese. Di default ExpanderCraft usa la lingua del sistema operativo, se è tra quelle tradotte, e l'inglese altrimenti. Nelle preferenze, alla voce Aspetto, si può scegliere una lingua precisa. Il gruppo creato al primo avvio, finché conserva il nome predefinito, prende il nome nella lingua scelta.
+The interface text lives in `locales/*.ftl`, in the [Fluent](https://projectfluent.org) format, and is embedded in the executable. English (`en.ftl`) is the reference: a message missing from another language is shown in English. By default ExpanderCraft uses the language of the operating system when it is one of the translated ones, and English otherwise. You can pick a specific language in the preferences under Appearance. The group created at first launch, while it still has its default name, takes its name in the chosen language.
 
-Nel codice un messaggio semplice si scrive `tr("menu-quit")`, uno con parametri `tr!("msg-combos-imported", count = n)`. I plurali seguono le regole CLDR di ogni lingua (in francese 0 e 1 sono singolari):
+In the code, a plain message is written `tr("menu-quit")` and one with parameters `tr!("msg-combos-imported", count = n)`. Plurals follow the CLDR rules of each language (in French 0 and 1 are singular):
 
 ```ftl
 msg-combos-imported =
@@ -138,55 +283,27 @@ msg-combos-imported =
     }
 ```
 
-Per aggiungere una lingua:
+To add a language:
 
-1. copia `locales/en.ftl` in `locales/xx.ftl` e traduci i valori, lasciando invariati gli id e le variabili `{ $nome }`;
-2. in `src/i18n.rs` aggiungi la variante a `Lang` (codice, nome nella lingua stessa, `include_str!`);
-3. in `src/prefs.rs` aggiungi la voce a `Language` e alla lista del menu in `ui/prefs_window.rs`;
-4. esegui `cargo test`: i test controllano che il file abbia tutti i messaggi di `en.ftl`, con le stesse variabili, e che ogni id usato nel codice esista.
+1. copy `locales/en.ftl` to `locales/xx.ftl` and translate the values, leaving the ids and the `{ $name }` variables unchanged;
+2. in `src/i18n.rs`, add a variant to `Lang` (code, name in its own language, `include_str!`);
+3. in `src/prefs.rs`, add the entry to `Language`, and to the menu list in `ui/prefs_window.rs`;
+4. run `cargo test`: the tests check that the file has every message of `en.ftl` with the same variables, and that every id used in the code exists.
 
-I nomi dei tasti nelle scorciatoie mostrate nelle preferenze sono tradotti (Maiusc, Maj, Mayús…), ma nei file e nelle variabili `#{shortcut:}` restano in inglese, così le combo funzionano con qualsiasi lingua.
+The key names in the shortcuts shown in the preferences are translated (Maiusc, Maj, Mayús…), but in files and in `#{shortcut:}` variables they stay in English, so combos work with any language.
 
-## Differenze rispetto a Beeftext
+## Publishing a release
 
-- `#{key:insert}` preme Ins (in Beeftext premeva Home); `#{key:backspace}` è disponibile.
-- `#{shortcut:}` si ferma alla prima `}`, quindi più scorciatoie nello stesso testo funzionano.
-- Le scorciatoie configurate vengono intercettate e non arrivano all'applicazione attiva.
-- Dopo una sostituzione, i tasti modificatori vengono ripremuti solo se l'utente li tiene ancora premuti, così Maiusc o Ctrl non restano bloccati.
-- Il testo incollato non entra nella cronologia degli appunti di Windows.
-- Una combo non può richiamare se stessa con `#{combo:}`.
-- Il testo che arriva da fuori (appunti, `#{input:}`, `#{envVar:}`, `#{powershell:}`) viene inserito così com'è: se contiene `#{key:}`, `#{shortcut:}`, `#{delay:}` o `#{cursor}`, questi non vengono eseguiti. Un testo copiato da una pagina web non può premere tasti al posto tuo.
-- Con lo spazio come attivatore e lo spazio finale mantenuto, `#{cursor}` tiene conto dello spazio aggiunto.
-- Non c'è il controllo degli aggiornamenti. Le traduzioni sono quattro (inglese, italiano, francese, spagnolo) contro le undici di Beeftext.
+1. Update `version` in `Cargo.toml` and add the section of the new version to `CHANGELOG.md` (`## 0.3.0 — date`).
+2. Commit and push to `main`.
+3. On GitHub, open *Releases → Draft a new release*, type the tag `v0.3.0` (it is created on `main`) and publish.
 
-## Test
+The `release` workflow checks that the tag matches the version in `Cargo.toml`, runs the tests, builds, and attaches `ExpanderCraft-0.3.0-windows-x64.zip` to the release. If the release description is empty, it fills it with the notes of that version from `CHANGELOG.md`. To rebuild the package of a release that is already published, use *Actions → release → Run workflow* and give the tag.
 
-```bash
-cargo test
-```
+If you attach a package built elsewhere before publishing the release, the workflow builds nothing and leaves the release as it is: in that case the description has to be written by hand. To keep the `build` workflow from starting on a push, put `[skip ci]` in the commit message.
 
-Su Linux, dove il programma non compila, i test si eseguono sulla versione Windows con Wine:
+## License and credits
 
-```bash
-CARGO_TARGET_X86_64_PC_WINDOWS_GNU_RUNNER=wine cargo test --target x86_64-pc-windows-gnu
-```
+[MIT](LICENSE). ExpanderCraft is inspired by [Beeftext](https://github.com/xmichelo/Beeftext) by Xavier Michelon (MIT) and follows its file format. The emoji shortcodes come from [gemoji](https://github.com/github/gemoji) (MIT) through the [`emojis`](https://crates.io/crates/emojis) crate. The interface is built with [egui](https://github.com/emilk/egui).
 
-62 test unitari coprono le traduzioni, la lista condivisa tra computer, le preferenze illeggibili, la ricerca delle emoji, il formato dei file, le variabili, i formati di data, i frammenti, il cursore, le corrispondenze e il motore di sostituzione (con tastiera e appunti simulati).
-
-## Pubblicare una versione
-
-1. aggiorna `version` in `Cargo.toml` e aggiungi la sezione della versione in `CHANGELOG.md` (`## 0.3.0 — data`);
-2. fai commit e push su `main`;
-3. su GitHub apri *Releases → Draft a new release*, scrivi il tag `v0.3.0` (viene creato su `main`) e pubblica.
-
-Il workflow `release` controlla che il tag corrisponda alla versione di `Cargo.toml`, esegue i test, compila e allega alla release `ExpanderCraft-0.3.0-windows-x64.zip`. Se la descrizione della release è vuota, la riempie con le note della versione prese da `CHANGELOG.md`. Per rifare il pacchetto di una release già pubblicata: *Actions → release → Run workflow*, indicando il tag.
-
-Se alla release alleghi già un pacchetto compilato altrove prima di pubblicarla, il workflow non compila niente e la release resta com'è: in quel caso la descrizione va scritta a mano. Per non far partire neanche il workflow `build` col push, metti `[skip ci]` nel messaggio del commit.
-
-## Novità
-
-Le modifiche di ogni versione sono in [CHANGELOG.md](CHANGELOG.md).
-
-## Licenza
-
-MIT. ExpanderCraft si ispira a Beeftext di Xavier Michelon (MIT) e ne riprende il formato dei file. Gli shortcode delle emoji provengono da gemoji (MIT) tramite il crate `emojis`.
+The full list of changes of every version is in [CHANGELOG.md](CHANGELOG.md).
