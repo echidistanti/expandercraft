@@ -340,7 +340,6 @@ error-invalid-group = La liste des groupes contient un groupe invalide.
 error-invalid-combos = La liste des combos est invalide.
 error-nothing-to-import = Le fichier ne contient aucune donnée importable.
 error-registry = Le registre Windows n'a pas pu être mis à jour (erreur { $code }).
-error-no-config-folder = Le dossier de configuration est introuvable.
 platform-hook-failed = Impossible d'intercepter le clavier : les substitutions sont désactivées.
 
 ## Key names (shown in shortcuts)
