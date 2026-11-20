@@ -338,7 +338,6 @@ error-invalid-combos = L'elenco delle combo non è valido.
 error-nothing-to-import = Il file non contiene dati importabili.
 error-registry = Impossibile aggiornare il registro di Windows (errore { $code }).
 error-no-config-folder = Impossibile trovare la cartella di configurazione.
-platform-macos-permissions = Concedi a ExpanderCraft i permessi Accessibilità e Monitoraggio input in Impostazioni di Sistema › Privacy e sicurezza, poi riavvialo.
 platform-hook-failed = Impossibile intercettare la tastiera: le sostituzioni sono disattivate.
 
 ## Key names (shown in shortcuts)

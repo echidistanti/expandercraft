@@ -76,7 +76,7 @@ pub fn apply_theme(ctx: &egui::Context, theme: PrefTheme) {
     send_title_bar_theme(ctx);
 }
 
-/// Give the title bar of the system of the window being drawn (macOS) the theme of the app.
+/// Give the title bar of the system of the window being drawn the theme of the app.
 pub fn send_title_bar_theme(ctx: &egui::Context) {
     let theme = match ctx.options(|o| o.theme_preference) {
         egui::ThemePreference::Dark => egui::SystemTheme::Dark,

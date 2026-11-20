@@ -1,7 +1,7 @@
 //! The title bar of the windows. On Windows the bar of the system follows the theme of the system, so the windows
 //! are created without it and the app draws its own: icon, title, buttons, moving, double click to maximize, and
 //! resizing at the edges. winit keeps the styles of a normal window under the hood, so Aero Snap, Win+arrows and
-//! Alt+Space still work. On macOS the bar of the system stays: it follows the theme of the app through egui.
+//! Alt+Space still work.
 
 use egui::{Align2, Color32, CursorIcon, FontId, Rect, ResizeDirection, Sense, Stroke, ViewportCommand, pos2, vec2};
 

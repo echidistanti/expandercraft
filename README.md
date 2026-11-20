@@ -4,7 +4,7 @@
 [![release](https://img.shields.io/github/v/release/echidistanti/expandercraft)](https://github.com/echidistanti/expandercraft/releases/latest)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-**A fast, lightweight text expander for Windows and macOS, written in Rust.**
+**A fast, lightweight text expander for Windows, written in Rust.**
 Type a short keyword in any application and ExpanderCraft replaces it with the text you stored for it: an email signature, a boilerplate paragraph, today's date, an emoji, even a sequence of key presses.
 
 ExpanderCraft is a clone of [Beeftext](https://github.com/xmichelo/Beeftext) (C++/Qt, MIT license). It reads and writes the same combo file format, so a Beeftext library moves over with one click and keeps working in both programs.
@@ -82,10 +82,6 @@ The installer and the executable are not code-signed, so Windows SmartScreen may
 
 To make the zip version fully portable, create an empty file named `Portable.bin` next to `expandercraft.exe`. All the settings, the combo list and the backups then live in a `Data` folder beside the executable, so you can carry the whole thing on a USB stick.
 
-### macOS
-
-There is no ready-made macOS package yet: build it from source (see [Building from source](#building-from-source)). On first launch, grant the **Accessibility** and **Input Monitoring** permissions in *System Settings › Privacy & Security*. They are tied to the binary, so after every rebuild you may need to remove them and grant them again.
-
 ## Getting started
 
 1. **Launch ExpanderCraft.** The main window opens and an icon appears in the notification area. Closing the window hides it to the tray; *File → Quit* (or the tray menu) really exits.
@@ -118,7 +114,7 @@ A snippet can contain variables, written `#{name}` or `#{name:parameter}`. They 
 | `#{combo:kw}` `#{upper:kw}` `#{lower:kw}` `#{trim:kw}` | The snippet of another combo, optionally transformed. |
 | `#{input:Description}` | Asks you for a value. The same description is asked only once per substitution. |
 | `#{envVar:NAME}` | The value of an environment variable. |
-| `#{powershell:path.ps1[:timeoutMs]}` | The output of a PowerShell script (10 seconds by default, `0` for no limit). On macOS it runs with `pwsh`. |
+| `#{powershell:path.ps1[:timeoutMs]}` | The output of a PowerShell script (10 seconds by default, `0` for no limit). |
 | `#{key:name[:repeat]}` | Presses a key (`tab`, `enter`, `up`, `f5`, `volumeUp`…), optionally several times. |
 | `#{shortcut:Ctrl+Shift+J}` | Presses a keyboard shortcut. |
 | `#{delay:ms}` | Pauses for the given number of milliseconds. |
@@ -143,10 +139,10 @@ Turn on *Use emoji shortcodes* in *Preferences › Emojis* and type a shortcode 
 
 ## Your data and settings
 
-| | Windows | macOS |
-|---|---|---|
-| Data folder | `%LOCALAPPDATA%\ExpanderCraft` | `~/Library/Application Support/ExpanderCraft` |
-| Portable edition | `Data` next to the executable (when `Portable.bin` is present) | — |
+| | Windows |
+|---|---|
+| Data folder | `%LOCALAPPDATA%\ExpanderCraft` |
+| Portable edition | `Data` next to the executable (when `Portable.bin` is present) |
 
 The data folder contains:
 
@@ -181,23 +177,22 @@ ExpanderCraft reads and writes the `comboList.json` format of the latest Beeftex
 
 ## Platform support
 
-| | Windows | macOS |
-|---|---|---|
-| Keyboard and mouse capture | `WH_KEYBOARD_LL` / `WH_MOUSE_LL` hooks | `CGEventTap` |
-| Text from a key press | `ToUnicodeEx` with the layout of the active window, dead keys preserved | `CGEventKeyboardGetUnicodeString` |
-| Key synthesis | `SendInput` (events are marked and ignored by the hook) | `CGEventPost` (marked events) |
-| Global shortcuts intercepted | yes | yes |
-| Clipboard with backup | every format in memory; excluded from the Win+V and cloud histories | text and images (`arboard`); excluded from the history |
-| Active application | executable name | app name (`NSWorkspace`) |
-| Launch at login | `HKCU\…\Run` | LaunchAgent |
-| Verification | build, clippy, unit tests, and end-to-end tests under Wine (Notepad) | build, clippy and tests in CI (`macos-latest`) |
+| | Windows |
+|---|---|
+| Keyboard and mouse capture | `WH_KEYBOARD_LL` / `WH_MOUSE_LL` hooks |
+| Text from a key press | `ToUnicodeEx` with the layout of the active window, dead keys preserved |
+| Key synthesis | `SendInput` (events are marked and ignored by the hook) |
+| Global shortcuts intercepted | yes |
+| Clipboard with backup | every format in memory; excluded from the Win+V and cloud histories |
+| Active application | executable name |
+| Launch at login | `HKCU\…\Run` |
+| Verification | build, clippy, unit tests, and end-to-end tests under Wine (Notepad) |
 
-Linux is not supported for now. All the code that depends on the operating system lives in `src/platform/`, so a Linux backend can be added later without touching the rest. An early experiment with X11 and Wayland lives in the `linux-wayland` branch.
+ExpanderCraft runs on Windows only; macOS and Linux are not supported. All the code that depends on the operating system lives in `src/platform/`.
 
 **Known limits**
 
-- *macOS*: the backend builds and passes the tests in CI, but has not been tried on a real Mac yet, and there is no signed `.app` bundle.
-- *Windows*: like every expander based on `SendInput`, ExpanderCraft cannot type into windows running as administrator unless it is elevated too (UIPI).
+- Like every expander based on `SendInput`, ExpanderCraft cannot type into windows running as administrator unless it is elevated too (UIPI).
 
 ## Troubleshooting
 
@@ -225,13 +220,6 @@ rustup target add x86_64-pc-windows-gnu
 cargo build --release --target x86_64-pc-windows-gnu
 ```
 
-### macOS
-
-```bash
-cargo build --release
-# executable: target/release/expandercraft
-```
-
 ### Windows installer
 
 The installer is built with [Inno Setup](https://jrsoftware.org/isinfo.php) 6.3 or later, from `installer/expandercraft.iss`. After `cargo build --release`:
@@ -257,7 +245,7 @@ CARGO_TARGET_X86_64_PC_WINDOWS_GNU_RUNNER=wine cargo test --target x86_64-pc-win
 
 More than 60 unit tests cover the translations, the list shared between computers, unreadable preferences, emoji search, the file format, variables, date formats, fragments, the cursor, matching, and the substitution engine (with a simulated keyboard and clipboard).
 
-Every push and pull request is also built and tested on GitHub Actions for Windows and macOS (`build` workflow), with `cargo clippy -- -D warnings`.
+Every push and pull request is also built and tested on GitHub Actions for Windows (`build` workflow), with `cargo clippy -- -D warnings`.
 
 ## Architecture
 
@@ -274,9 +262,7 @@ src/
 ├── prefs.rs  shortcut.rs  process_list.rs  backup.rs  emoji.rs  sound.rs  paths.rs  logger.rs  icon.rs
 ├── platform/
 │   ├── mod.rs         Keyboard, Clipboard and InputSink traits, shared types
-│   ├── windows.rs     Windows backend
-│   ├── macos.rs       macOS backend
-│   └── unix_common.rs the parts of the macOS backend built on portable crates (arboard, Unix sockets), reusable for Linux
+│   └── windows.rs     Windows backend
 └── ui/                egui/eframe interface: main window, dialogs, preferences, picker, emoji list, tray
 locales/               en.ftl (reference), it.ftl, fr.ftl, es.ftl
 installer/             Inno Setup script and the PowerShell scripts that install Inno Setup and build the setup program

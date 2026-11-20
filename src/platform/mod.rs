@@ -1,16 +1,15 @@
 //! Platform abstraction layer.
 //!
-//! Each backend (Windows, macOS) provides the same set of free functions and implements the
-//! [`Keyboard`] and [`Clipboard`] traits. The rest of the application only talks to this module, so that a
-//! Linux backend can be added later.
+//! The Windows backend provides a set of free functions and implements the [`Keyboard`] and [`Clipboard`]
+//! traits. The rest of the application only talks to this module.
 //!
-//! | Feature                    | Windows                 | macOS                          |
-//! |----------------------------|-------------------------|--------------------------------|
-//! | Keyboard/mouse monitoring  | `WH_KEYBOARD_LL` hooks  | `CGEventTap`                   |
-//! | Keystroke synthesis        | `SendInput`             | `CGEventPost`                  |
-//! | Clipboard backup           | all formats (Win32)     | text and images (`arboard`)    |
-//! | Active application         | process image name      | `NSWorkspace` frontmost app    |
-//! | Auto-start                 | `HKCU\...\Run`          | LaunchAgent                    |
+//! | Feature                    | Windows                 |
+//! |----------------------------|-------------------------|
+//! | Keyboard/mouse monitoring  | `WH_KEYBOARD_LL` hooks  |
+//! | Keystroke synthesis        | `SendInput`             |
+//! | Clipboard backup           | all formats (Win32)     |
+//! | Active application         | process image name      |
+//! | Auto-start                 | `HKCU\...\Run`          |
 
 use std::sync::Arc;
 
@@ -57,7 +56,7 @@ pub trait Keyboard: Send {
     fn erase(&mut self, count: usize);
     /// Type text, character by character.
     fn type_text(&mut self, text: &str, delay_ms: u64);
-    /// Trigger the paste command of the active application (Ctrl+V, Shift+Insert, or Cmd+V on macOS).
+    /// Trigger the paste command of the active application (Ctrl+V or Shift+Insert).
     fn paste(&mut self, use_shift_insert: bool);
     fn press_key(&mut self, key: Key, repeat: u32, delay_ms: u64);
     fn press_shortcut(&mut self, shortcut: &Shortcut);
@@ -98,28 +97,13 @@ mod windows;
 #[cfg(windows)]
 pub use self::windows::*;
 
-#[cfg(target_os = "macos")]
-mod macos;
-#[cfg(target_os = "macos")]
-pub use self::macos::*;
-
-#[cfg(not(any(windows, target_os = "macos")))]
-compile_error!("ExpanderCraft supports Windows and macOS (Linux support is planned).");
-
-#[cfg(target_os = "macos")]
-mod unix_common;
+#[cfg(not(windows))]
+compile_error!("ExpanderCraft supports Windows only.");
 
 /// Open a file or folder with the default application of the system.
 pub fn open_path(path: &std::path::Path) {
-    let mut cmd = if cfg!(windows) {
-        let mut c = std::process::Command::new("explorer");
-        c.arg(path);
-        c
-    } else {
-        let mut c = std::process::Command::new("open");
-        c.arg(path);
-        c
-    };
+    let mut cmd = std::process::Command::new("explorer");
+    cmd.arg(path);
     if let Err(e) = cmd.spawn() {
         log::warn!("Could not open '{}': {e}", path.display());
     }

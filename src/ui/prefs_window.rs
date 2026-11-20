@@ -350,9 +350,7 @@ fn emojis_tab(ui: &mut egui::Ui, p: &mut Preferences, extras: &mut Vec<Extra>) {
 fn advanced_tab(ui: &mut egui::Ui, p: &mut Preferences, extras: &mut Vec<Extra>) {
     section(ui, tr("prefs-section-text-insertion"));
     ui.checkbox(&mut p.restore_clipboard_after_substitution, tr("prefs-restore-clipboard"));
-    if !cfg!(target_os = "macos") {
-        ui.checkbox(&mut p.use_shift_insert_for_pasting, tr("prefs-shift-insert"));
-    }
+    ui.checkbox(&mut p.use_shift_insert_for_pasting, tr("prefs-shift-insert"));
     ui.horizontal(|ui| {
         ui.label(tr("prefs-keystroke-delay"));
         ui.add(egui::DragValue::new(&mut p.delay_between_keystrokes_ms).range(0..=500));

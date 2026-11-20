@@ -106,13 +106,7 @@ impl Key {
     }
 }
 
-const META_NAME: &str = if cfg!(target_os = "macos") {
-    "Cmd"
-} else if cfg!(windows) {
-    "Win"
-} else {
-    "Super"
-};
+const META_NAME: &str = "Win";
 
 /// Every key with a name: (key, name shown and written in the settings, name in `#{key:}` variables, other
 /// accepted names). All the names are accepted in both places, compared in lowercase. The menu lists the keys

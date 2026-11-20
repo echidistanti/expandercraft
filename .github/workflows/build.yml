@@ -7,15 +7,7 @@ on:
 
 jobs:
   build:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: windows-latest
-            artifact: target/release/expandercraft.exe
-          - os: macos-latest
-            artifact: target/release/expandercraft
-    runs-on: ${{ matrix.os }}
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -28,18 +20,16 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: expandercraft-${{ runner.os }}
-          path: ${{ matrix.artifact }}
+          path: target/release/expandercraft.exe
 
       # The Windows installer is built on every run: it proves that installer/expandercraft.iss still compiles,
       # and the setup program can be downloaded from the artifacts of the run to try it.
       - name: Build the Windows installer
-        if: runner.os == 'Windows'
         shell: pwsh
         run: |
           ./installer/install-inno-setup.ps1
           ./installer/build.ps1
       - uses: actions/upload-artifact@v4
-        if: runner.os == 'Windows'
         with:
           name: expandercraft-Windows-setup
           path: installer/Output/*-setup.exe

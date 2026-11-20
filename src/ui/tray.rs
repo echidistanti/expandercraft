@@ -59,7 +59,7 @@ impl Tray {
         let s = shared.clone();
         TrayIconEvent::set_event_handler(Some(move |event: TrayIconEvent| match event {
             TrayIconEvent::DoubleClick { button: MouseButton::Left, .. } => s.ui.send(UiMsg::ShowMainWindow),
-            TrayIconEvent::Click { button: MouseButton::Left, button_state: MouseButtonState::Up, .. } if !cfg!(target_os = "macos") => {
+            TrayIconEvent::Click { button: MouseButton::Left, button_state: MouseButtonState::Up, .. } => {
                 s.ui.send(UiMsg::ShowMainWindow)
             }
             _ => {}
@@ -68,7 +68,7 @@ impl Tray {
         let mut builder = TrayIconBuilder::new()
             .with_menu(Box::new(menu))
             .with_tooltip(tooltip(enabled))
-            .with_menu_on_left_click(cfg!(target_os = "macos"));
+            .with_menu_on_left_click(false);
         if let Some(icon) = make_icon(enabled) {
             builder = builder.with_icon(icon);
         }
