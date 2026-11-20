@@ -24,7 +24,7 @@ if (-not $Version) {
 }
 if (-not $ExeDir) { $ExeDir = Join-Path $root 'target\release' }
 if (-not (Test-Path (Join-Path $ExeDir 'expandercraft.exe'))) {
-    throw "expandercraft.exe not found in $ExeDir: run 'cargo build --release' first"
+    throw "expandercraft.exe not found in ${ExeDir} - run 'cargo build --release' first"
 }
 
 # The compiler: on the PATH, or in the usual places of an Inno Setup installation.
