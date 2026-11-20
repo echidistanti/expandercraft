@@ -1215,7 +1215,7 @@ dependencies = [
 
 [[package]]
 name = "expandercraft"
-version = "0.5.1"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "arboard",
